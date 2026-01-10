@@ -133,22 +133,22 @@
 {{ $clusterStatus := $clusterResource.status | default (dict) }}
 {{ $clusterAtProvider := $clusterStatus.atProvider | default (dict) }}
 
-{{ $vpcConfigList := $clusterAtProvider.vpcConfig | default (list) }}
+{{ $vpcConfigRaw := $clusterAtProvider.vpcConfig | default (list) }}
 {{ $clusterVpcConfig := dict }}
-{{ if gt (len $vpcConfigList) 0 }}
-  {{ $clusterVpcConfig = index $vpcConfigList 0 }}
+{{ if and $vpcConfigRaw (eq (kindOf $vpcConfigRaw) "slice") (gt (len $vpcConfigRaw) 0) }}
+  {{ $clusterVpcConfig = index $vpcConfigRaw 0 }}
 {{ end }}
 
-{{ $identityList := $clusterAtProvider.identity | default (list) }}
+{{ $identityRaw := $clusterAtProvider.identity | default (list) }}
 {{ $clusterIdentity := dict }}
-{{ if gt (len $identityList) 0 }}
-  {{ $clusterIdentity = index $identityList 0 }}
+{{ if and $identityRaw (eq (kindOf $identityRaw) "slice") (gt (len $identityRaw) 0) }}
+  {{ $clusterIdentity = index $identityRaw 0 }}
 {{ end }}
 
-{{ $oidcList := $clusterIdentity.oidc | default (list) }}
+{{ $oidcRaw := $clusterIdentity.oidc | default (list) }}
 {{ $clusterOidc := dict }}
-{{ if gt (len $oidcList) 0 }}
-  {{ $clusterOidc = index $oidcList 0 }}
+{{ if and $oidcRaw (eq (kindOf $oidcRaw) "slice") (gt (len $oidcRaw) 0) }}
+  {{ $clusterOidc = index $oidcRaw 0 }}
 {{ end }}
 
 {{ $clusterConditions := $clusterStatus.conditions | default (list) }}

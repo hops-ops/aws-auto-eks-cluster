@@ -54,6 +54,10 @@ jobs:
       aws-account-id: "034489662075"
       aws-region: us-east-2
       timeout-minutes: 30
+      debug-resource-types: |
+        [
+          "network.aws.hops.ops.com.ai"
+        ]
 
   publish:
     needs: 
