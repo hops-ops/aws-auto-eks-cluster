@@ -1,0 +1,67 @@
+name: on-push-main
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/on-push-main.yaml'
+      - '.github/workflows/on-version-tagged.yaml'
+      - '.gitops/**'
+      - 'apis/**'
+      - 'examples/**'
+      - 'functions/**'
+      - 'tests/**'
+      - 'upbound.yaml'
+
+permissions:
+  packages: write
+  contents: write
+  issues: write
+  pull-requests: write
+  id-token: write
+
+jobs:
+  validate:
+    uses: unbounded-tech/workflows-crossplane/.github/workflows/validate.yaml@v2.7.0
+    with:
+      examples: |
+        [
+          { "example": "examples/autoeksclusters/minimal.yaml" },
+          { "example": "examples/autoeksclusters/standard.yaml" },
+          { "example": "examples/autoeksclusters/with-network.yaml" },
+          { "example": "examples/autoeksclusters/import.yaml" },
+          { "example": "examples/autoeksclusters/test/example.yaml", "observed_resources": "examples/autoeksclusters/test/mocks/observed-resources/steps/1" },
+          { "example": "examples/autoeksclusters/test/example.yaml", "observed_resources": "examples/autoeksclusters/test/mocks/observed-resources/steps/2" },
+          { "example": "examples/autoeksclusters/test/example.yaml", "observed_resources": "examples/autoeksclusters/test/mocks/observed-resources/steps/3" }
+        ]
+      api_path: apis/autoeksclusters
+      error_on_missing_schemas: true
+
+  test:
+    uses: unbounded-tech/workflows-crossplane/.github/workflows/test.yaml@v2.7.0
+
+  e2e:
+    uses: unbounded-tech/workflows-crossplane/.github/workflows/e2e.yaml@v2.7.0
+    with:
+      aws: true
+      aws-use-oidc: true
+      aws-account-id: "034489662075"
+      aws-region: us-east-2
+      timeout-minutes: 30
+
+  version-and-tag:
+    name: Version and Tag
+    needs: [validate, test, e2e]
+    uses: unbounded-tech/workflow-vnext-tag/.github/workflows/workflow.yaml@v1.20.2
+    secrets:
+      DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
+    with:
+      useDeployKey: true
+      yqPatches: |
+        patches:
+          - filePath: .gitops/deploy/values.yaml
+            selector: .version
+            valuePrefix: "v"
+          - filePath: .gitops/deploy/Chart.yaml
+            selector: .version
+            valuePrefix: ""

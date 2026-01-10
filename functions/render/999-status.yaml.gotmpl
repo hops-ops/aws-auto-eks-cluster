@@ -1,0 +1,21 @@
+# code: language=yaml
+# XR Status Output
+# Outputs $state.status computed in 010-state-status.yaml.gotmpl
+
+{{ $xr := getCompositeResource . }}
+{{ $s := $state.status }}
+
+{{ if $.observed.resources }}
+---
+apiVersion: {{ $xr.apiVersion }}
+kind: {{ $xr.kind }}
+status:
+  clusterName: {{ $s.clusterName }}
+  clusterEndpoint: {{ $s.clusterEndpoint }}
+  clusterSecurityGroupId: {{ $s.clusterSecurityGroupId }}
+  oidc: {{ $s.oidc }}
+  controlPlaneStatus: {{ $s.controlPlaneStatus }}
+  encryptionKeyArn: {{ $s.encryptionKeyArn }}
+  nodeRoleArn: {{ $s.nodeRoleArn }}
+  controlPlaneRoleArn: {{ $s.controlPlaneRoleArn }}
+{{ end }}

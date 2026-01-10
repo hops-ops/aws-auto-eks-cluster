@@ -1,0 +1,117 @@
+# code: language=yaml
+# IAM Policy for EKS Auto Mode Resource Tagging
+
+{{ $am := $state.automode }}
+
+{{ if $am.render.iamPolicies }}
+---
+apiVersion: iam.aws.m.upbound.io/v1beta1
+kind: Policy
+metadata:
+  name: {{ $am.cluster.name }}-resource-tagging
+  labels: {{ merge (dict "policy" (printf "%s-resource-tagging" $am.cluster.name)) $am.labels | toJson }}
+  annotations:
+    {{ setResourceNameAnnotation "iam-policy-resource-tagging" }}
+spec:
+  managementPolicies: {{ $am.managementPolicies | toJson }}
+  forProvider:
+    policy: |
+      {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Sid": "Compute",
+            "Effect": "Allow",
+            "Action": [
+              "ec2:CreateFleet",
+              "ec2:RunInstances",
+              "ec2:CreateLaunchTemplate"
+            ],
+            "Resource": "*",
+            "Condition": {
+              "StringEquals": {
+                "aws:RequestTag/eks:eks-cluster-name": "{{ $am.cluster.name }}"
+              },
+              "StringLike": {
+                "aws:RequestTag/eks:kubernetes-node-class-name": "*",
+                "aws:RequestTag/eks:kubernetes-node-pool-name": "*"
+              }
+            }
+          },
+          {
+            "Sid": "Storage",
+            "Effect": "Allow",
+            "Action": [
+              "ec2:CreateVolume",
+              "ec2:CreateSnapshot"
+            ],
+            "Resource": [
+              "arn:aws:ec2:*:*:volume/*",
+              "arn:aws:ec2:*:*:snapshot/*"
+            ],
+            "Condition": {
+              "StringEquals": {
+                "aws:RequestTag/eks:eks-cluster-name": "{{ $am.cluster.name }}"
+              }
+            }
+          },
+          {
+            "Sid": "Networking",
+            "Effect": "Allow",
+            "Action": "ec2:CreateNetworkInterface",
+            "Resource": "*",
+            "Condition": {
+              "StringEquals": {
+                "aws:RequestTag/eks:eks-cluster-name": "{{ $am.cluster.name }}"
+              },
+              "StringLike": {
+                "aws:RequestTag/eks:kubernetes-cni-node-name": "*"
+              }
+            }
+          },
+          {
+            "Sid": "LoadBalancer",
+            "Effect": "Allow",
+            "Action": [
+              "elasticloadbalancing:CreateLoadBalancer",
+              "elasticloadbalancing:CreateTargetGroup",
+              "elasticloadbalancing:CreateListener",
+              "elasticloadbalancing:CreateRule",
+              "ec2:CreateSecurityGroup"
+            ],
+            "Resource": "*",
+            "Condition": {
+              "StringEquals": {
+                "aws:RequestTag/eks:eks-cluster-name": "{{ $am.cluster.name }}"
+              }
+            }
+          },
+          {
+            "Sid": "ShieldProtection",
+            "Effect": "Allow",
+            "Action": ["shield:CreateProtection"],
+            "Resource": "*",
+            "Condition": {
+              "StringEquals": {
+                "aws:RequestTag/eks:eks-cluster-name": "{{ $am.cluster.name }}"
+              }
+            }
+          },
+          {
+            "Sid": "ShieldTagResource",
+            "Effect": "Allow",
+            "Action": ["shield:TagResource"],
+            "Resource": "arn:aws:shield::*:protection/*",
+            "Condition": {
+              "StringEquals": {
+                "aws:RequestTag/eks:eks-cluster-name": "{{ $am.cluster.name }}"
+              }
+            }
+          }
+        ]
+      }
+    tags: {{ $am.tags | toJson }}
+  providerConfigRef:
+    name: {{ $am.providerConfig.name }}
+    kind: {{ $am.providerConfig.kind }}
+{{ end }}

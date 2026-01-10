@@ -1,0 +1,29 @@
+# code: language=yaml
+#
+# AWS EKS Auto Mode Cluster - Status Computation
+# Computes $state.status from observed and effective values
+#
+
+{{ $eff := $state.spec.effective }}
+{{ $obs := $state.observed }}
+{{ $am := $state.automode }}
+
+# ==============================================================================
+# Compute Status Values
+# ==============================================================================
+{{ $status := dict
+  "clusterName" $am.cluster.name
+  "clusterEndpoint" ($obs.cluster.endpoint | default "Pending")
+  "clusterSecurityGroupId" ($obs.cluster.securityGroupId | default "Pending")
+  "oidc" ($obs.cluster.oidc | default "Pending")
+  "controlPlaneStatus" ($obs.cluster.status | default "Pending")
+  "encryptionKeyArn" ($obs.kms.arn | default "Pending")
+  "nodeRoleArn" ($obs.nodeRole.arn | default "Pending")
+  "controlPlaneRoleArn" ($obs.controlPlaneRole.arn | default "Pending")
+  "spec" (dict
+    "raw" $state.spec.raw
+    "effective" $state.spec.effective
+  )
+}}
+
+{{ $state = set $state "status" $status }}

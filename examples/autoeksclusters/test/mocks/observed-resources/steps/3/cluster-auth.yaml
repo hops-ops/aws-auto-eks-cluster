@@ -1,0 +1,17 @@
+apiVersion: eks.aws.m.upbound.io/v1beta1
+kind: ClusterAuth
+metadata:
+  name: test-cluster
+  annotations:
+    crossplane.io/composition-resource-name: cluster-auth
+    gotemplating.fn.crossplane.io/composition-resource-name: cluster-auth
+status:
+  conditions:
+    - type: Ready
+      status: "True"
+      reason: Available
+    - type: Synced
+      status: "True"
+  atProvider:
+    clusterName: test-cluster
+    region: us-east-1

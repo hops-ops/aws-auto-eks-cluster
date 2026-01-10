@@ -1,0 +1,76 @@
+apiVersion: aws.hops.ops.com.ai/v1alpha1
+kind: AutoEKSCluster
+metadata:
+  name: test-cluster
+spec:
+  clusterName: test-cluster
+  region: us-east-1
+  accountId: "123456789012"
+  version: "1.31"
+  subnetIds:
+    - subnet-0123456789abcdef0
+    - subnet-0123456789abcdef1
+    - subnet-0123456789abcdef2
+
+  providerConfigRef:
+    name: default
+    kind: ProviderConfig
+
+  tags:
+    environment: test
+    team: platform
+
+  privateAccess: true
+  publicAccess: false
+  encryptionEnabled: true
+
+  # Enable OIDC for IRSA (testing optional feature)
+  oidc:
+    enabled: true
+
+  # Enable custom security group rules
+  securityGroupRules:
+    enabled: true
+    ingress:
+      - description: VPN Access
+        cidrIpv4: 10.0.0.0/8
+        fromPort: 443
+        toPort: 443
+        ipProtocol: tcp
+
+  # Custom access entries
+  accessEntries:
+    - principalArn: arn:aws:iam::123456789012:role/AdminRole
+      type: STANDARD
+      kubernetesGroups:
+        - cluster-admin
+      accessPolicies:
+        - policyArn: arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy
+          accessScope:
+            type: cluster
+
+  # Custom node configuration
+  nodeConfig:
+    enabled: true
+    nodeClass:
+      name: default
+      amiFamily: AL2023
+      ephemeralStorage:
+        size: 100Gi
+        iops: 4000
+        throughput: 200
+    nodePool:
+      enabled: true
+      name: general
+      capacityType: spot
+      instanceCategories:
+        - c
+        - m
+        - r
+      minGeneration: 6
+      expireAfter: 720h
+      disruption:
+        consolidateAfter: 1m
+        consolidationPolicy: WhenEmptyOrUnderutilized
+        budgets:
+          - nodes: "20%"

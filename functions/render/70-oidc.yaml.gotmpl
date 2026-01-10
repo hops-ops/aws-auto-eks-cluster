@@ -1,0 +1,57 @@
+# code: language=yaml
+# OIDC Provider for IRSA (optional)
+
+{{ $am := $state.automode }}
+{{ $obs := $state.observed }}
+{{ $readiness := $obs.readiness }}
+
+{{ if $am.render.oidc }}
+---
+apiVersion: iam.aws.m.upbound.io/v1beta1
+kind: OpenIDConnectProvider
+metadata:
+  name: {{ $am.cluster.name }}
+  labels: {{ $am.labels | toJson }}
+  annotations:
+    {{ setResourceNameAnnotation "oidc-provider" }}
+    {{- if $am.oidc.externalName }}
+    crossplane.io/external-name: {{ $am.oidc.externalName }}
+    {{- end }}
+spec:
+  managementPolicies: {{ $am.managementPolicies | toJson }}
+  forProvider:
+    clientIdList:
+    - sts.amazonaws.com
+    tags: {{ $am.tags | toJson }}
+    thumbprintList:
+    - 9e99a48a9960b14926bb7f3b02e22da2b0ab7280
+    url: {{ $obs.cluster.oidcIssuer }}
+  providerConfigRef:
+    name: {{ $am.providerConfig.name }}
+    kind: {{ $am.providerConfig.kind }}
+
+# ==============================================================================
+# Usage: Cluster protects OIDC Provider
+# ==============================================================================
+{{ if and $obs.cluster.ready (get $readiness "oidc-provider") }}
+---
+apiVersion: protection.crossplane.io/v1beta1
+kind: Usage
+metadata:
+  name: {{ $am.cluster.name }}-cluster-protects-oidc
+  labels: {{ $am.labels | toJson }}
+  annotations:
+    {{ setResourceNameAnnotation "usage-cluster-oidc" }}
+spec:
+  of:
+    apiVersion: eks.aws.m.upbound.io/v1beta1
+    kind: Cluster
+    resourceRef:
+      name: {{ $am.cluster.name }}
+  by:
+    apiVersion: iam.aws.m.upbound.io/v1beta1
+    kind: OpenIDConnectProvider
+    resourceRef:
+      name: {{ $am.cluster.name }}
+{{ end }}
+{{ end }}

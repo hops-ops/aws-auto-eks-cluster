@@ -1,0 +1,75 @@
+apiVersion: aws.hops.ops.com.ai/v1alpha1
+kind: AutoEKSCluster
+metadata:
+  name: production-cluster
+  namespace: default
+spec:
+  clusterName: production-cluster
+  region: us-east-1
+  accountId: "123456789012"
+  version: "1.31"
+  subnetIds:
+    - subnet-aaaaaaaa
+    - subnet-bbbbbbbb
+    - subnet-cccccccc
+
+  providerConfigRef:
+    name: aws-production
+    kind: ProviderConfig
+
+  tags:
+    environment: production
+    team: platform
+
+  privateAccess: true
+  publicAccess: false
+  encryptionEnabled: true
+
+  # Custom access entries for cluster admins
+  accessEntries:
+    - principalArn: arn:aws:iam::123456789012:role/PlatformAdmin
+      type: STANDARD
+      kubernetesGroups:
+        - cluster-admin
+      accessPolicies:
+        - policyArn: arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy
+          accessScope:
+            type: cluster
+
+  # Optional security group rules
+  securityGroupRules:
+    enabled: true
+    ingress:
+      - description: Corporate VPN access
+        cidrIpv4: 10.0.0.0/8
+        fromPort: 443
+        toPort: 443
+        ipProtocol: tcp
+
+  # OIDC disabled by default (Pod Identity preferred)
+  oidc:
+    enabled: false
+
+  # Node configuration
+  nodeConfig:
+    enabled: true
+    nodeClass:
+      name: hops-default
+      amiFamily: AL2023
+      ephemeralStorage:
+        size: "100Gi"
+        iops: 3000
+        throughput: 125
+    nodePool:
+      enabled: true
+      name: hops-spot
+      capacityType: spot
+      instanceCategories:
+        - c
+        - m
+        - r
+      minGeneration: 6
+      expireAfter: "336h"
+      disruption:
+        consolidateAfter: "60s"
+        consolidationPolicy: WhenEmptyOrUnderutilized

@@ -1,0 +1,18 @@
+apiVersion: iam.aws.m.upbound.io/v1beta1
+kind: Policy
+metadata:
+  name: test-cluster-resource-tagging
+  annotations:
+    crossplane.io/composition-resource-name: iam-policy-resource-tagging
+    gotemplating.fn.crossplane.io/composition-resource-name: iam-policy-resource-tagging
+status:
+  conditions:
+    - type: Ready
+      status: "True"
+      reason: Available
+    - type: Synced
+      status: "True"
+  atProvider:
+    arn: arn:aws:iam::123456789012:policy/test-cluster-resource-tagging
+    id: arn:aws:iam::123456789012:policy/test-cluster-resource-tagging
+    policyId: ANPAEXAMPLEID123456789

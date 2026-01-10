@@ -1,0 +1,90 @@
+# code: language=yaml
+#
+# AWS EKS Auto Mode Cluster - Computed State
+# Builds $state.automode with computed values and render flags
+#
+
+{{ $eff := $state.spec.effective }}
+{{ $obs := $state.observed }}
+
+# ==============================================================================
+# Computed IAM Values
+# ==============================================================================
+{{ $controlPlaneRoleName := printf "%s-controlplane" $eff.clusterName }}
+{{ $nodeRoleName := printf "%s-nodegroup" $eff.clusterName }}
+{{ $controlPlaneRoleArn := printf "arn:aws:iam::%s:role/%s" $eff.accountId $controlPlaneRoleName }}
+{{ $nodeRoleArn := printf "arn:aws:iam::%s:role/%s" $eff.accountId $nodeRoleName }}
+
+# ==============================================================================
+# Render Flags
+# ==============================================================================
+{{ $renderIamRoles := true }}
+{{ $renderIamPolicies := true }}
+{{ $renderIamAttachments := $obs.controlPlaneRole.ready }}
+{{ $renderKms := $eff.encryptionEnabled }}
+{{ $renderCluster := and $obs.controlPlaneRole.ready (or (not $eff.encryptionEnabled) $obs.kms.ready) }}
+{{ $renderClusterAuth := $obs.cluster.ready }}
+{{ $renderProviderConfigs := $obs.clusterAuth.ready }}
+{{ $renderAccessEntries := $obs.cluster.ready }}
+{{ $renderOidc := and $eff.oidc.enabled $obs.cluster.ready }}
+{{ $renderSecurityGroupRules := and $eff.securityGroupRules.enabled (ne $obs.cluster.securityGroupId "") }}
+{{ $renderNodeConfig := and $eff.nodeConfig.enabled $obs.clusterAuth.ready }}
+
+# ==============================================================================
+# Build $state.automode
+# ==============================================================================
+{{ $automode := dict
+  "cluster" (dict
+    "name" $eff.clusterName
+    "region" $eff.region
+    "accountId" $eff.accountId
+    "version" $eff.version
+    "subnetIds" $eff.subnetIds
+    "subnetSelector" $eff.subnetSelector
+    "useSubnetSelector" (and (not $eff.subnetIds) $eff.subnetSelector)
+    "privateAccess" $eff.privateAccess
+    "publicAccess" $eff.publicAccess
+    "encryptionEnabled" $eff.encryptionEnabled
+  )
+
+  "iam" (dict
+    "controlPlaneRoleName" $controlPlaneRoleName
+    "nodeRoleName" $nodeRoleName
+    "controlPlaneRoleArn" $controlPlaneRoleArn
+    "nodeRoleArn" $nodeRoleArn
+    "permissionsBoundary" $eff.permissionsBoundary
+  )
+
+  "tags" $eff.tags
+  "labels" $eff.labels
+  "managementPolicies" $eff.managementPolicies
+  "externalName" $eff.externalName
+  "iam" $eff.iam
+  "kms" $eff.kms
+
+  "accessEntries" $eff.accessEntries
+
+  "securityGroupRules" $eff.securityGroupRules
+
+  "oidc" $eff.oidc
+
+  "nodeConfig" $eff.nodeConfig
+
+  "providerConfig" $eff.providerConfigRef
+
+  "render" (dict
+    "iamRoles" $renderIamRoles
+    "iamPolicies" $renderIamPolicies
+    "iamAttachments" $renderIamAttachments
+    "kms" $renderKms
+    "cluster" $renderCluster
+    "clusterAuth" $renderClusterAuth
+    "providerConfigs" $renderProviderConfigs
+    "accessEntries" $renderAccessEntries
+    "oidc" $renderOidc
+    "securityGroupRules" $renderSecurityGroupRules
+    "nodeConfig" $renderNodeConfig
+  )
+}}
+
+{{ $state = set $state "automode" $automode }}

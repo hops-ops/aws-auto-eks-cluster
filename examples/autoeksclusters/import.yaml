@@ -1,0 +1,74 @@
+# Import existing EKS cluster resources into Crossplane management.
+#
+# This example demonstrates how to adopt an existing EKS cluster without
+# risk of accidental deletion. The managementPolicies exclude "Delete",
+# so Crossplane will observe and update resources but never delete them.
+#
+# Steps to import:
+# 1. Get the external names of your existing resources:
+#    - Cluster: Your EKS cluster name
+#    - IAM Roles: Role names (not ARNs)
+#    - KMS Key: Key ID (not ARN)
+#    - OIDC Provider: Full ARN
+#
+# 2. Apply this manifest - Crossplane will adopt the resources
+# 3. Once stable, optionally add "Delete" to managementPolicies
+#
+apiVersion: aws.hops.ops.com.ai/v1alpha1
+kind: AutoEKSCluster
+metadata:
+  name: imported-cluster
+  namespace: default
+spec:
+  clusterName: my-existing-cluster
+  region: us-east-1
+  accountId: "123456789012"
+  version: "1.31"
+  subnetIds:
+    - subnet-aaaaaaaa
+    - subnet-bbbbbbbb
+    - subnet-cccccccc
+
+  providerConfigRef:
+    name: aws-production
+    kind: ProviderConfig
+
+  # Exclude Delete to safely import without risk of accidental deletion
+  managementPolicies:
+    - Create
+    - Observe
+    - Update
+    - LateInitialize
+
+  # External name of existing EKS cluster to import
+  externalName: my-existing-cluster
+
+  # IAM role external names for import
+  iam:
+    controlPlaneRole:
+      externalName: my-existing-cluster-controlplane
+    nodeRole:
+      externalName: my-existing-cluster-nodegroup
+
+  # KMS key external name for import
+  kms:
+    externalName: 12345678-1234-1234-1234-123456789012
+
+  # OIDC provider external name for import (uncomment if cluster has one)
+  # oidc:
+  #   enabled: true
+  #   externalName: arn:aws:iam::123456789012:oidc-provider/oidc.eks.us-east-1.amazonaws.com/id/EXAMPLED539D4633E53DE1B71EXAMPLE
+
+  tags:
+    environment: production
+    imported: "true"
+
+  # Match existing cluster configuration
+  privateAccess: true
+  publicAccess: false
+  encryptionEnabled: true
+
+  # Disable node config initially during import
+  # Enable after cluster is successfully imported
+  nodeConfig:
+    enabled: false

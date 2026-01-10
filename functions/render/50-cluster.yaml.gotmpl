@@ -1,0 +1,116 @@
+# code: language=yaml
+# EKS Cluster with Auto Mode
+
+{{ $am := $state.automode }}
+{{ $obs := $state.observed }}
+
+{{ if $am.render.cluster }}
+---
+apiVersion: eks.aws.m.upbound.io/v1beta1
+kind: Cluster
+metadata:
+  name: {{ $am.cluster.name }}
+  labels: {{ merge (dict "cluster" $am.cluster.name) $am.labels | toJson }}
+  annotations:
+    {{ setResourceNameAnnotation "cluster" }}
+    {{- if $am.externalName }}
+    crossplane.io/external-name: {{ $am.externalName }}
+    {{- end }}
+spec:
+  managementPolicies: {{ $am.managementPolicies | toJson }}
+  forProvider:
+    accessConfig:
+      authenticationMode: API
+      bootstrapClusterCreatorAdminPermissions: true
+    bootstrapSelfManagedAddons: false
+    computeConfig:
+      enabled: true
+      nodePools:
+      - general-purpose
+      nodeRoleArn: {{ $am.iam.nodeRoleArn }}
+    {{- if $am.cluster.encryptionEnabled }}
+    encryptionConfig:
+      provider:
+        keyArn: {{ $obs.kms.arn }}
+      resources:
+      - secrets
+    {{- end }}
+    kubernetesNetworkConfig:
+      elasticLoadBalancing:
+        enabled: true
+    region: {{ $am.cluster.region }}
+    roleArnRef:
+      name: {{ $am.cluster.name }}-controlplane
+    tags: {{ $am.tags | toJson }}
+    storageConfig:
+      blockStorage:
+        enabled: true
+    version: "{{ $am.cluster.version }}"
+    vpcConfig:
+      endpointPrivateAccess: {{ $am.cluster.privateAccess }}
+      endpointPublicAccess: {{ $am.cluster.publicAccess }}
+      {{- if $am.cluster.useSubnetSelector }}
+      subnetIdSelector:
+        {{- if $am.cluster.subnetSelector.matchControllerRef }}
+        matchControllerRef: true
+        {{- end }}
+        {{- if $am.cluster.subnetSelector.matchLabels }}
+        matchLabels: {{ $am.cluster.subnetSelector.matchLabels | toJson }}
+        {{- end }}
+      {{- else }}
+      subnetIds: {{ $am.cluster.subnetIds | toJson }}
+      {{- end }}
+  providerConfigRef:
+    name: {{ $am.providerConfig.name }}
+    kind: {{ $am.providerConfig.kind }}
+
+# ==============================================================================
+# Usages: Role/KMS protect Cluster
+# ==============================================================================
+
+# Control plane role protects EKS Cluster
+{{ if and $obs.controlPlaneRole.ready $obs.cluster.ready }}
+---
+apiVersion: protection.crossplane.io/v1beta1
+kind: Usage
+metadata:
+  name: {{ $am.cluster.name }}-cp-role-protects-cluster
+  labels: {{ $am.labels | toJson }}
+  annotations:
+    {{ setResourceNameAnnotation "usage-cp-role-cluster-ref" }}
+spec:
+  of:
+    apiVersion: iam.aws.m.upbound.io/v1beta1
+    kind: Role
+    resourceRef:
+      name: {{ $am.cluster.name }}-controlplane
+  by:
+    apiVersion: eks.aws.m.upbound.io/v1beta1
+    kind: Cluster
+    resourceRef:
+      name: {{ $am.cluster.name }}
+{{ end }}
+
+# KMS Key protects Cluster (when encryption enabled)
+{{ if and $am.cluster.encryptionEnabled $obs.kms.ready $obs.cluster.ready }}
+---
+apiVersion: protection.crossplane.io/v1beta1
+kind: Usage
+metadata:
+  name: {{ $am.cluster.name }}-kms-protects-cluster
+  labels: {{ $am.labels | toJson }}
+  annotations:
+    {{ setResourceNameAnnotation "usage-kms-cluster" }}
+spec:
+  of:
+    apiVersion: kms.aws.m.upbound.io/v1beta1
+    kind: Key
+    resourceRef:
+      name: {{ $am.cluster.name }}-secrets
+  by:
+    apiVersion: eks.aws.m.upbound.io/v1beta1
+    kind: Cluster
+    resourceRef:
+      name: {{ $am.cluster.name }}
+{{ end }}
+{{ end }}

@@ -1,0 +1,233 @@
+# code: language=yaml
+# EKS Access Entries
+
+{{ $am := $state.automode }}
+{{ $obs := $state.observed }}
+{{ $readiness := $obs.readiness }}
+
+{{ if $am.render.accessEntries }}
+# Node role access entry - always created
+---
+apiVersion: eks.aws.m.upbound.io/v1beta1
+kind: AccessEntry
+metadata:
+  name: {{ $am.cluster.name }}-node-access
+  labels: {{ $am.labels | toJson }}
+  annotations:
+    {{ setResourceNameAnnotation "access-entry-node" }}
+spec:
+  managementPolicies: {{ $am.managementPolicies | toJson }}
+  forProvider:
+    clusterName: {{ $am.cluster.name }}
+    principalArnFromRoleRef:
+      name: {{ $am.cluster.name }}-nodegroup
+    region: {{ $am.cluster.region }}
+    type: EC2
+  providerConfigRef:
+    name: {{ $am.providerConfig.name }}
+    kind: {{ $am.providerConfig.kind }}
+
+---
+apiVersion: eks.aws.m.upbound.io/v1beta1
+kind: AccessPolicyAssociation
+metadata:
+  name: {{ $am.cluster.name }}-node-policy
+  labels: {{ $am.labels | toJson }}
+  annotations:
+    {{ setResourceNameAnnotation "access-policy-node" }}
+spec:
+  managementPolicies: {{ $am.managementPolicies | toJson }}
+  forProvider:
+    accessScope:
+      type: cluster
+    clusterName: {{ $am.cluster.name }}
+    policyArn: arn:aws:eks::aws:cluster-access-policy/AmazonEKSAutoNodePolicy
+    principalArn: {{ $am.iam.nodeRoleArn }}
+    region: {{ $am.cluster.region }}
+  providerConfigRef:
+    name: {{ $am.providerConfig.name }}
+    kind: {{ $am.providerConfig.kind }}
+
+# Custom access entries from spec
+{{- range $i, $entry := $am.accessEntries }}
+{{- $entryName := printf "%s-custom-%d" $am.cluster.name $i }}
+---
+apiVersion: eks.aws.m.upbound.io/v1beta1
+kind: AccessEntry
+metadata:
+  name: {{ $entryName }}
+  labels: {{ $am.labels | toJson }}
+  annotations:
+    {{ setResourceNameAnnotation (printf "access-entry-custom-%d" $i) }}
+spec:
+  managementPolicies: {{ $am.managementPolicies | toJson }}
+  forProvider:
+    clusterName: {{ $am.cluster.name }}
+    principalArn: {{ $entry.principalArn }}
+    region: {{ $am.cluster.region }}
+    type: {{ $entry.type | default "STANDARD" }}
+    {{- if $entry.kubernetesGroups }}
+    kubernetesGroups: {{ $entry.kubernetesGroups | toJson }}
+    {{- end }}
+  providerConfigRef:
+    name: {{ $am.providerConfig.name }}
+    kind: {{ $am.providerConfig.kind }}
+
+{{- range $j, $policy := $entry.accessPolicies | default (list) }}
+{{- $policyName := printf "%s-custom-%d-policy-%d" $am.cluster.name $i $j }}
+---
+apiVersion: eks.aws.m.upbound.io/v1beta1
+kind: AccessPolicyAssociation
+metadata:
+  name: {{ $policyName }}
+  labels: {{ $am.labels | toJson }}
+  annotations:
+    {{ setResourceNameAnnotation (printf "access-policy-custom-%d-%d" $i $j) }}
+spec:
+  managementPolicies: {{ $am.managementPolicies | toJson }}
+  forProvider:
+    accessScope:
+      type: {{ ($policy.accessScope).type | default "cluster" }}
+      {{- if ($policy.accessScope).namespaces }}
+      namespaces: {{ ($policy.accessScope).namespaces | toJson }}
+      {{- end }}
+    clusterName: {{ $am.cluster.name }}
+    policyArn: {{ $policy.policyArn }}
+    principalArn: {{ $entry.principalArn }}
+    region: {{ $am.cluster.region }}
+  providerConfigRef:
+    name: {{ $am.providerConfig.name }}
+    kind: {{ $am.providerConfig.kind }}
+{{- end }}
+{{- end }}
+
+# ==============================================================================
+# Usages: Role/Cluster protect Access entries
+# ==============================================================================
+{{ $clusterReady := $obs.cluster.ready }}
+{{ $nodeRoleReady := $obs.nodeRole.ready }}
+
+# Node role protects AccessEntry
+{{ if and $nodeRoleReady (get $readiness "access-entry-node") }}
+---
+apiVersion: protection.crossplane.io/v1beta1
+kind: Usage
+metadata:
+  name: {{ $am.cluster.name }}-node-role-protects-access-entry
+  labels: {{ $am.labels | toJson }}
+  annotations:
+    {{ setResourceNameAnnotation "usage-node-role-access" }}
+spec:
+  of:
+    apiVersion: iam.aws.m.upbound.io/v1beta1
+    kind: Role
+    resourceRef:
+      name: {{ $am.cluster.name }}-nodegroup
+  by:
+    apiVersion: eks.aws.m.upbound.io/v1beta1
+    kind: AccessEntry
+    resourceRef:
+      name: {{ $am.cluster.name }}-node-access
+{{ end }}
+
+# Cluster protects node access entry
+{{ if and $clusterReady (get $readiness "access-entry-node") }}
+---
+apiVersion: protection.crossplane.io/v1beta1
+kind: Usage
+metadata:
+  name: {{ $am.cluster.name }}-cluster-protects-node-access
+  labels: {{ $am.labels | toJson }}
+  annotations:
+    {{ setResourceNameAnnotation "usage-cluster-node-access" }}
+spec:
+  of:
+    apiVersion: eks.aws.m.upbound.io/v1beta1
+    kind: Cluster
+    resourceRef:
+      name: {{ $am.cluster.name }}
+  by:
+    apiVersion: eks.aws.m.upbound.io/v1beta1
+    kind: AccessEntry
+    resourceRef:
+      name: {{ $am.cluster.name }}-node-access
+{{ end }}
+
+# Cluster protects node access policy
+{{ if and $clusterReady (get $readiness "access-policy-node") }}
+---
+apiVersion: protection.crossplane.io/v1beta1
+kind: Usage
+metadata:
+  name: {{ $am.cluster.name }}-cluster-protects-node-policy
+  labels: {{ $am.labels | toJson }}
+  annotations:
+    {{ setResourceNameAnnotation "usage-cluster-node-policy" }}
+spec:
+  of:
+    apiVersion: eks.aws.m.upbound.io/v1beta1
+    kind: Cluster
+    resourceRef:
+      name: {{ $am.cluster.name }}
+  by:
+    apiVersion: eks.aws.m.upbound.io/v1beta1
+    kind: AccessPolicyAssociation
+    resourceRef:
+      name: {{ $am.cluster.name }}-node-policy
+{{ end }}
+
+# Custom access entries - Cluster protects each entry and its policies
+{{- range $i, $entry := $am.accessEntries }}
+{{- $entryName := printf "%s-custom-%d" $am.cluster.name $i }}
+{{- $entryResourceName := printf "access-entry-custom-%d" $i }}
+
+{{ if and $clusterReady (get $readiness $entryResourceName) }}
+---
+apiVersion: protection.crossplane.io/v1beta1
+kind: Usage
+metadata:
+  name: {{ $am.cluster.name }}-cluster-protects-{{ $entryResourceName }}
+  labels: {{ $am.labels | toJson }}
+  annotations:
+    {{ setResourceNameAnnotation (printf "usage-cluster-%s" $entryResourceName) }}
+spec:
+  of:
+    apiVersion: eks.aws.m.upbound.io/v1beta1
+    kind: Cluster
+    resourceRef:
+      name: {{ $am.cluster.name }}
+  by:
+    apiVersion: eks.aws.m.upbound.io/v1beta1
+    kind: AccessEntry
+    resourceRef:
+      name: {{ $entryName }}
+{{ end }}
+
+{{- range $j, $policy := $entry.accessPolicies | default (list) }}
+{{- $policyName := printf "%s-custom-%d-policy-%d" $am.cluster.name $i $j }}
+{{- $policyResourceName := printf "access-policy-custom-%d-%d" $i $j }}
+
+{{ if and $clusterReady (get $readiness $policyResourceName) }}
+---
+apiVersion: protection.crossplane.io/v1beta1
+kind: Usage
+metadata:
+  name: {{ $am.cluster.name }}-cluster-protects-{{ $policyResourceName }}
+  labels: {{ $am.labels | toJson }}
+  annotations:
+    {{ setResourceNameAnnotation (printf "usage-cluster-%s" $policyResourceName) }}
+spec:
+  of:
+    apiVersion: eks.aws.m.upbound.io/v1beta1
+    kind: Cluster
+    resourceRef:
+      name: {{ $am.cluster.name }}
+  by:
+    apiVersion: eks.aws.m.upbound.io/v1beta1
+    kind: AccessPolicyAssociation
+    resourceRef:
+      name: {{ $policyName }}
+{{ end }}
+{{- end }}
+{{- end }}
+{{ end }}

@@ -1,0 +1,223 @@
+# code: language=yaml
+#
+# AWS EKS Auto Mode Cluster - State Initialization
+# Initializes $state with spec.raw, spec.effective, and observed state
+#
+
+{{ $xr := getCompositeResource . }}
+{{ $metadata := $xr.metadata | default (dict) }}
+{{ $spec := $xr.spec | default (dict) }}
+
+# ==============================================================================
+# Default Labels: managed=true + <kind>=<name>
+# ==============================================================================
+{{- $defaultLabels := dict
+  "hops.ops.com.ai/managed" "true"
+  (printf "hops.ops.com.ai/%s" (lower $xr.kind)) $metadata.name
+}}
+
+# ==============================================================================
+# Build spec.effective (spec with defaults applied)
+# ==============================================================================
+{{ $providerConfigRef := $spec.providerConfigRef | default (dict) }}
+{{ $nodeConfig := $spec.nodeConfig | default (dict) }}
+{{ $nodeClassConfig := $nodeConfig.nodeClass | default (dict) }}
+{{ $ephemeralStorage := $nodeClassConfig.ephemeralStorage | default (dict) }}
+{{ $nodePoolConfig := $nodeConfig.nodePool | default (dict) }}
+{{ $instanceSizesConfig := $nodePoolConfig.instanceSizes | default (dict) }}
+{{ $disruptionConfig := $nodePoolConfig.disruption | default (dict) }}
+{{ $sgRules := $spec.securityGroupRules | default (dict) }}
+{{ $oidcConfig := $spec.oidc | default (dict) }}
+
+{{ $subnetSelector := $spec.subnetSelector | default (dict) }}
+{{ $iam := $spec.iam | default (dict) }}
+{{ $kms := $spec.kms | default (dict) }}
+{{ $iamControlPlaneRole := $iam.controlPlaneRole | default (dict) }}
+{{ $iamNodeRole := $iam.nodeRole | default (dict) }}
+
+{{ $effective := dict
+  "clusterName" $spec.clusterName
+  "region" $spec.region
+  "accountId" $spec.accountId
+  "version" $spec.version
+  "subnetIds" ($spec.subnetIds | default (list))
+  "subnetSelector" (dict
+    "matchLabels" ($subnetSelector.matchLabels | default (dict))
+    "matchControllerRef" ($subnetSelector.matchControllerRef | default false)
+  )
+  "providerConfigRef" (dict
+    "name" ($providerConfigRef.name | default "default")
+    "kind" ($providerConfigRef.kind | default "ProviderConfig")
+  )
+  "tags" (merge (dict "hops" "true") ($spec.tags | default (dict)))
+  "labels" (merge $defaultLabels ($spec.labels | default dict))
+  "permissionsBoundary" ($spec.permissionsBoundary | default "")
+  "privateAccess" ($spec.privateAccess | default true)
+  "publicAccess" ($spec.publicAccess | default false)
+  "encryptionEnabled" ($spec.encryptionEnabled | default true)
+  "managementPolicies" ($spec.managementPolicies | default (list "*"))
+  "externalName" ($spec.externalName | default "")
+  "iam" (dict
+    "controlPlaneRole" (dict
+      "externalName" ($iamControlPlaneRole.externalName | default "")
+    )
+    "nodeRole" (dict
+      "externalName" ($iamNodeRole.externalName | default "")
+    )
+  )
+  "kms" (dict
+    "externalName" ($kms.externalName | default "")
+  )
+  "accessEntries" ($spec.accessEntries | default (list))
+  "securityGroupRules" (dict
+    "enabled" ($sgRules.enabled | default false)
+    "ingress" ($sgRules.ingress | default (list))
+  )
+  "oidc" (dict
+    "enabled" ($oidcConfig.enabled | default false)
+    "externalName" ($oidcConfig.externalName | default "")
+  )
+  "nodeConfig" (dict
+    "enabled" ($nodeConfig.enabled | default true)
+    "nodeClass" (dict
+      "name" ($nodeClassConfig.name | default "hops-default")
+      "amiFamily" ($nodeClassConfig.amiFamily | default "AL2023")
+      "ephemeralStorage" (dict
+        "size" ($ephemeralStorage.size | default "80Gi")
+        "iops" ($ephemeralStorage.iops | default 3000)
+        "throughput" ($ephemeralStorage.throughput | default 125)
+      )
+    )
+    "nodePool" (dict
+      "enabled" ($nodePoolConfig.enabled | default true)
+      "name" ($nodePoolConfig.name | default "hops-spot")
+      "capacityType" ($nodePoolConfig.capacityType | default "spot")
+      "instanceCategories" ($nodePoolConfig.instanceCategories | default (list "c" "m" "r"))
+      "architectures" ($nodePoolConfig.architectures | default (list "amd64"))
+      "minGeneration" ($nodePoolConfig.minGeneration | default 6)
+      "minInstanceSize" ($instanceSizesConfig.min | default "medium")
+      "maxInstanceSize" ($instanceSizesConfig.max | default "")
+      "expireAfter" ($nodePoolConfig.expireAfter | default "336h")
+      "disruption" (dict
+        "consolidateAfter" ($disruptionConfig.consolidateAfter | default "30s")
+        "consolidationPolicy" ($disruptionConfig.consolidationPolicy | default "WhenEmptyOrUnderutilized")
+        "budgets" ($disruptionConfig.budgets | default (list (dict "nodes" "10%")))
+      )
+    )
+  )
+}}
+
+# ==============================================================================
+# Extract Observed State from $.observed.resources
+# ==============================================================================
+{{ $raw := $.observed.resources | default (dict) }}
+
+# Resource Readiness Helper
+{{ $readiness := dict }}
+{{ range $name, $entry := $raw }}
+  {{ $ready := false }}
+  {{ $resource := $entry.resource | default (dict) }}
+  {{ $status := $resource.status | default (dict) }}
+  {{ $conditions := $status.conditions | default (list) }}
+  {{ range $conditions }}
+    {{ if and (eq (get . "type") "Ready") (eq (get . "status") "True") }}
+      {{ $ready = true }}
+    {{ end }}
+  {{ end }}
+  {{ $readiness = merge $readiness (dict $name $ready) }}
+{{ end }}
+
+# Cluster Observed Values
+{{ $clusterEntry := get $raw "cluster" | default (dict) }}
+{{ $clusterResource := $clusterEntry.resource | default (dict) }}
+{{ $clusterStatus := $clusterResource.status | default (dict) }}
+{{ $clusterAtProvider := $clusterStatus.atProvider | default (dict) }}
+
+{{ $vpcConfigList := $clusterAtProvider.vpcConfig | default (list) }}
+{{ $clusterVpcConfig := dict }}
+{{ if gt (len $vpcConfigList) 0 }}
+  {{ $clusterVpcConfig = index $vpcConfigList 0 }}
+{{ end }}
+
+{{ $identityList := $clusterAtProvider.identity | default (list) }}
+{{ $clusterIdentity := dict }}
+{{ if gt (len $identityList) 0 }}
+  {{ $clusterIdentity = index $identityList 0 }}
+{{ end }}
+
+{{ $oidcList := $clusterIdentity.oidc | default (list) }}
+{{ $clusterOidc := dict }}
+{{ if gt (len $oidcList) 0 }}
+  {{ $clusterOidc = index $oidcList 0 }}
+{{ end }}
+
+{{ $clusterConditions := $clusterStatus.conditions | default (list) }}
+{{ $controlPlaneStatus := "Pending" }}
+{{ range $clusterConditions }}
+  {{ if eq (get . "type") "Ready" }}
+    {{ $controlPlaneStatus = get . "reason" | default "Unknown" }}
+  {{ end }}
+{{ end }}
+
+# Control Plane IAM Role
+{{ $cpRoleEntry := get $raw "iam-role-controlplane" | default (dict) }}
+{{ $cpRoleAtProvider := ((($cpRoleEntry.resource | default (dict)).status | default (dict)).atProvider | default (dict)) }}
+
+# Node IAM Role
+{{ $nodeRoleEntry := get $raw "iam-role-nodegroup" | default (dict) }}
+{{ $nodeRoleAtProvider := ((($nodeRoleEntry.resource | default (dict)).status | default (dict)).atProvider | default (dict)) }}
+
+# KMS Key
+{{ $kmsEntry := get $raw "kms-key" | default (dict) }}
+{{ $kmsAtProvider := ((($kmsEntry.resource | default (dict)).status | default (dict)).atProvider | default (dict)) }}
+
+# Resource Tagging Policy
+{{ $tagPolicyEntry := get $raw "iam-policy-resource-tagging" | default (dict) }}
+{{ $tagPolicyAtProvider := ((($tagPolicyEntry.resource | default (dict)).status | default (dict)).atProvider | default (dict)) }}
+
+# Build observed slice
+{{ $observed := dict
+  "cluster" (dict
+    "endpoint" ($clusterAtProvider.endpoint | default "")
+    "securityGroupId" ($clusterVpcConfig.clusterSecurityGroupId | default "")
+    "oidcIssuer" ($clusterOidc.issuer | default "")
+    "oidc" (($clusterOidc.issuer | default "") | replace "https://" "")
+    "status" $controlPlaneStatus
+    "ready" (get $readiness "cluster" | default false)
+  )
+  "controlPlaneRole" (dict
+    "arn" ($cpRoleAtProvider.arn | default "")
+    "ready" (get $readiness "iam-role-controlplane" | default false)
+  )
+  "nodeRole" (dict
+    "arn" ($nodeRoleAtProvider.arn | default "")
+    "name" ($nodeRoleAtProvider.id | default "")
+    "ready" (get $readiness "iam-role-nodegroup" | default false)
+  )
+  "kms" (dict
+    "arn" ($kmsAtProvider.arn | default "")
+    "keyId" ($kmsAtProvider.keyId | default "")
+    "ready" (get $readiness "kms-key" | default false)
+  )
+  "taggingPolicy" (dict
+    "arn" ($tagPolicyAtProvider.arn | default "")
+    "ready" (get $readiness "iam-policy-resource-tagging" | default false)
+  )
+  "clusterAuth" (dict
+    "ready" (get $readiness "cluster-auth" | default false)
+  )
+  "readiness" $readiness
+}}
+
+# ==============================================================================
+# Initialize $state with unified structure
+# ==============================================================================
+{{ $state := dict
+  "spec" (dict
+    "raw" $spec
+    "effective" $effective
+  )
+  "observed" $observed
+  "automode" (dict)
+  "status" (dict)
+}}

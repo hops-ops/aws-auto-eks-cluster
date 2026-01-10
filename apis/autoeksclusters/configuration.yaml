@@ -1,0 +1,26 @@
+apiVersion: meta.pkg.crossplane.io/v1alpha1
+kind: Configuration
+metadata:
+  name: aws-auto-eks-cluster
+  annotations:
+    meta.crossplane.io/maintainer: Hops Platform Team <platform@hops.ops.com.ai>
+    meta.crossplane.io/source: github.com/hops-ops/aws-auto-eks-cluster
+    meta.crossplane.io/description: |
+      AutoEKSCluster creates AWS EKS clusters with Auto Mode enabled, including
+      IAM roles, KMS encryption, and optional Karpenter NodeClass/NodePool resources.
+spec:
+  dependsOn:
+  - provider: xpkg.crossplane.io/crossplane-contrib/provider-aws-eks
+    version: ">=v2.3.0"
+  - provider: xpkg.crossplane.io/crossplane-contrib/provider-aws-iam
+    version: ">=v2.3.0"
+  - provider: xpkg.crossplane.io/crossplane-contrib/provider-aws-kms
+    version: ">=v2.3.0"
+  - provider: xpkg.crossplane.io/crossplane-contrib/provider-aws-ec2
+    version: ">=v2.3.0"
+  - provider: xpkg.crossplane.io/crossplane-contrib/provider-kubernetes
+    version: ">=v0.15.0"
+  - provider: xpkg.crossplane.io/crossplane-contrib/provider-helm
+    version: ">=v0.21.0"
+  - function: xpkg.crossplane.io/crossplane-contrib/function-auto-ready
+    version: ">=v0.6.0"

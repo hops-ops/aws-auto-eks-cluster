@@ -1,0 +1,73 @@
+# code: language=yaml
+# KMS Key for EKS Secrets Encryption
+
+{{ $am := $state.automode }}
+{{ $obs := $state.observed }}
+{{ $readiness := $obs.readiness }}
+
+{{ if $am.render.kms }}
+---
+apiVersion: kms.aws.m.upbound.io/v1beta1
+kind: Key
+metadata:
+  name: {{ $am.cluster.name }}-secrets
+  labels: {{ $am.labels | toJson }}
+  annotations:
+    {{ setResourceNameAnnotation "kms-key" }}
+    {{- if $am.kms.externalName }}
+    crossplane.io/external-name: {{ $am.kms.externalName }}
+    {{- end }}
+spec:
+  managementPolicies: {{ $am.managementPolicies | toJson }}
+  forProvider:
+    deletionWindowInDays: 7
+    description: Encryption key for EKS secrets in cluster {{ $am.cluster.name }}
+    region: {{ $am.cluster.region }}
+    tags: {{ $am.tags | toJson }}
+  providerConfigRef:
+    name: {{ $am.providerConfig.name }}
+    kind: {{ $am.providerConfig.kind }}
+
+---
+apiVersion: kms.aws.m.upbound.io/v1beta1
+kind: Alias
+metadata:
+  name: {{ $am.cluster.name }}-secrets
+  labels: {{ $am.labels | toJson }}
+  annotations:
+    {{ setResourceNameAnnotation "kms-alias" }}
+spec:
+  managementPolicies: {{ $am.managementPolicies | toJson }}
+  forProvider:
+    region: {{ $am.cluster.region }}
+    targetKeyIdRef:
+      name: {{ $am.cluster.name }}-secrets
+  providerConfigRef:
+    name: {{ $am.providerConfig.name }}
+    kind: {{ $am.providerConfig.kind }}
+
+# ==============================================================================
+# Usage: KMS Key protects Alias
+# ==============================================================================
+{{ if and $obs.kms.ready (get $readiness "kms-alias") }}
+---
+apiVersion: protection.crossplane.io/v1beta1
+kind: Usage
+metadata:
+  name: {{ $am.cluster.name }}-kms-protects-alias
+  labels: {{ $am.labels | toJson }}
+  annotations:
+    {{ setResourceNameAnnotation "usage-kms-alias" }}
+spec:
+  of:
+    apiVersion: kms.aws.m.upbound.io/v1beta1
+    kind: Key
+    resourceRef:
+      name: {{ $am.cluster.name }}-secrets
+  by:
+    apiVersion: kms.aws.m.upbound.io/v1beta1
+    kind: Alias
+    resourceRef:
+      name: {{ $am.cluster.name }}-secrets
+{{ end }}
+{{ end }}

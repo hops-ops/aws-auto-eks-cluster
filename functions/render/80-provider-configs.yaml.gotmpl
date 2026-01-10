@@ -1,0 +1,86 @@
+# code: language=yaml
+# Cluster Auth and Provider Configs
+
+{{ $am := $state.automode }}
+{{ $obs := $state.observed }}
+
+{{ if $am.render.clusterAuth }}
+---
+apiVersion: eks.aws.m.upbound.io/v1beta1
+kind: ClusterAuth
+metadata:
+  name: {{ $am.cluster.name }}
+  labels: {{ $am.labels | toJson }}
+  annotations:
+    {{ setResourceNameAnnotation "cluster-auth" }}
+spec:
+  forProvider:
+    clusterName: {{ $am.cluster.name }}
+    region: {{ $am.cluster.region }}
+  writeConnectionSecretToRef:
+    name: {{ $am.cluster.name }}
+  providerConfigRef:
+    name: {{ $am.providerConfig.name }}
+    kind: {{ $am.providerConfig.kind }}
+
+# ==============================================================================
+# Usage: Cluster protects ClusterAuth
+# ==============================================================================
+{{ if and $obs.cluster.ready $obs.clusterAuth.ready }}
+---
+apiVersion: protection.crossplane.io/v1beta1
+kind: Usage
+metadata:
+  name: {{ $am.cluster.name }}-cluster-protects-auth
+  labels: {{ $am.labels | toJson }}
+  annotations:
+    {{ setResourceNameAnnotation "usage-cluster-auth" }}
+spec:
+  of:
+    apiVersion: eks.aws.m.upbound.io/v1beta1
+    kind: Cluster
+    resourceRef:
+      name: {{ $am.cluster.name }}
+  by:
+    apiVersion: eks.aws.m.upbound.io/v1beta1
+    kind: ClusterAuth
+    resourceRef:
+      name: {{ $am.cluster.name }}
+{{ end }}
+{{ end }}
+
+{{ if $am.render.providerConfigs }}
+---
+apiVersion: kubernetes.crossplane.io/v1alpha1
+kind: ProviderConfig
+metadata:
+  name: {{ $am.cluster.name }}
+  labels: {{ $am.labels | toJson }}
+  annotations:
+    {{ setResourceNameAnnotation "k8s-provider-config" }}
+    gotemplating.fn.crossplane.io/ready: "True"
+spec:
+  credentials:
+    secretRef:
+      key: kubeconfig
+      namespace: crossplane-system
+      name: {{ $am.cluster.name }}
+    source: Secret
+
+---
+apiVersion: helm.crossplane.io/v1beta1
+kind: ProviderConfig
+metadata:
+  name: {{ $am.cluster.name }}
+  labels: {{ $am.labels | toJson }}
+  annotations:
+    {{ setResourceNameAnnotation "helm-provider-config" }}
+    gotemplating.fn.crossplane.io/ready: "True"
+spec:
+  credentials:
+    secretRef:
+      key: kubeconfig
+      namespace: crossplane-system
+      name: {{ $am.cluster.name }}
+    source: Secret
+{{ end }}

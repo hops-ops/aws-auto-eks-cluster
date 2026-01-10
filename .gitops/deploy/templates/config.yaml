@@ -1,0 +1,23 @@
+apiVersion: pkg.crossplane.io/v1
+kind: Configuration
+metadata:
+  name: aws-auto-eks-cluster
+spec:
+  package: ghcr.io/hops-ops/aws-auto-eks-cluster:{{ .Values.version }}
+  packagePullSecrets:
+    - name: ghcr
+  skipDependencyResolution: {{ .Values.skipDependencyResolution }}
+
+---
+
+# skipDependencyResolution false would name this hops-ops-aws-auto-eks-clusterrender
+# so we need to match that format to avoid issues with the package name
+apiVersion: pkg.crossplane.io/v1
+kind: Function
+metadata:
+  name: hops-ops-aws-auto-eks-clusterrender
+spec:
+  package: ghcr.io/hops-ops/aws-auto-eks-cluster_render:{{ .Values.version }}
+  packagePullSecrets:
+    - name: ghcr
+  skipDependencyResolution: {{ .Values.skipDependencyResolution }}

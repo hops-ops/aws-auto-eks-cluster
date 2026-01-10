@@ -1,0 +1,364 @@
+# code: language=yaml
+# IAM Role Policy Attachments for EKS Auto Mode
+
+{{ $am := $state.automode }}
+{{ $obs := $state.observed }}
+{{ $readiness := $obs.readiness }}
+
+{{ if $am.render.iamAttachments }}
+# Control plane policy attachments
+---
+apiVersion: iam.aws.m.upbound.io/v1beta1
+kind: RolePolicyAttachment
+metadata:
+  name: {{ $am.cluster.name }}-cp-block-storage
+  labels: {{ $am.labels | toJson }}
+  annotations:
+    {{ setResourceNameAnnotation "iam-attach-cp-block-storage" }}
+spec:
+  managementPolicies: {{ $am.managementPolicies | toJson }}
+  forProvider:
+    policyArn: arn:aws:iam::aws:policy/AmazonEKSBlockStoragePolicy
+    roleRef:
+      name: {{ $am.cluster.name }}-controlplane
+  providerConfigRef:
+    name: {{ $am.providerConfig.name }}
+    kind: {{ $am.providerConfig.kind }}
+
+---
+apiVersion: iam.aws.m.upbound.io/v1beta1
+kind: RolePolicyAttachment
+metadata:
+  name: {{ $am.cluster.name }}-cp-cluster
+  labels: {{ $am.labels | toJson }}
+  annotations:
+    {{ setResourceNameAnnotation "iam-attach-cp-cluster" }}
+spec:
+  managementPolicies: {{ $am.managementPolicies | toJson }}
+  forProvider:
+    policyArn: arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
+    roleRef:
+      name: {{ $am.cluster.name }}-controlplane
+  providerConfigRef:
+    name: {{ $am.providerConfig.name }}
+    kind: {{ $am.providerConfig.kind }}
+
+---
+apiVersion: iam.aws.m.upbound.io/v1beta1
+kind: RolePolicyAttachment
+metadata:
+  name: {{ $am.cluster.name }}-cp-compute
+  labels: {{ $am.labels | toJson }}
+  annotations:
+    {{ setResourceNameAnnotation "iam-attach-cp-compute" }}
+spec:
+  managementPolicies: {{ $am.managementPolicies | toJson }}
+  forProvider:
+    policyArn: arn:aws:iam::aws:policy/AmazonEKSComputePolicy
+    roleRef:
+      name: {{ $am.cluster.name }}-controlplane
+  providerConfigRef:
+    name: {{ $am.providerConfig.name }}
+    kind: {{ $am.providerConfig.kind }}
+
+---
+apiVersion: iam.aws.m.upbound.io/v1beta1
+kind: RolePolicyAttachment
+metadata:
+  name: {{ $am.cluster.name }}-cp-lb
+  labels: {{ $am.labels | toJson }}
+  annotations:
+    {{ setResourceNameAnnotation "iam-attach-cp-lb" }}
+spec:
+  managementPolicies: {{ $am.managementPolicies | toJson }}
+  forProvider:
+    policyArn: arn:aws:iam::aws:policy/AmazonEKSLoadBalancingPolicy
+    roleRef:
+      name: {{ $am.cluster.name }}-controlplane
+  providerConfigRef:
+    name: {{ $am.providerConfig.name }}
+    kind: {{ $am.providerConfig.kind }}
+
+---
+apiVersion: iam.aws.m.upbound.io/v1beta1
+kind: RolePolicyAttachment
+metadata:
+  name: {{ $am.cluster.name }}-cp-network
+  labels: {{ $am.labels | toJson }}
+  annotations:
+    {{ setResourceNameAnnotation "iam-attach-cp-network" }}
+spec:
+  managementPolicies: {{ $am.managementPolicies | toJson }}
+  forProvider:
+    policyArn: arn:aws:iam::aws:policy/AmazonEKSNetworkingPolicy
+    roleRef:
+      name: {{ $am.cluster.name }}-controlplane
+  providerConfigRef:
+    name: {{ $am.providerConfig.name }}
+    kind: {{ $am.providerConfig.kind }}
+
+---
+apiVersion: iam.aws.m.upbound.io/v1beta1
+kind: RolePolicyAttachment
+metadata:
+  name: {{ $am.cluster.name }}-cp-resource-tagging
+  labels: {{ $am.labels | toJson }}
+  annotations:
+    {{ setResourceNameAnnotation "iam-attach-cp-resource-tagging" }}
+spec:
+  managementPolicies: {{ $am.managementPolicies | toJson }}
+  forProvider:
+    policyArnSelector:
+      matchControllerRef: true
+      matchLabels:
+        policy: {{ $am.cluster.name }}-resource-tagging
+    roleRef:
+      name: {{ $am.cluster.name }}-controlplane
+  providerConfigRef:
+    name: {{ $am.providerConfig.name }}
+    kind: {{ $am.providerConfig.kind }}
+
+# Node group policy attachments
+---
+apiVersion: iam.aws.m.upbound.io/v1beta1
+kind: RolePolicyAttachment
+metadata:
+  name: {{ $am.cluster.name }}-node-ecr
+  labels: {{ $am.labels | toJson }}
+  annotations:
+    {{ setResourceNameAnnotation "iam-attach-node-ecr" }}
+spec:
+  managementPolicies: {{ $am.managementPolicies | toJson }}
+  forProvider:
+    policyArn: arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPullOnly
+    roleRef:
+      name: {{ $am.cluster.name }}-nodegroup
+  providerConfigRef:
+    name: {{ $am.providerConfig.name }}
+    kind: {{ $am.providerConfig.kind }}
+
+---
+apiVersion: iam.aws.m.upbound.io/v1beta1
+kind: RolePolicyAttachment
+metadata:
+  name: {{ $am.cluster.name }}-node-worker
+  labels: {{ $am.labels | toJson }}
+  annotations:
+    {{ setResourceNameAnnotation "iam-attach-node-worker" }}
+spec:
+  managementPolicies: {{ $am.managementPolicies | toJson }}
+  forProvider:
+    policyArn: arn:aws:iam::aws:policy/AmazonEKSWorkerNodeMinimalPolicy
+    roleRef:
+      name: {{ $am.cluster.name }}-nodegroup
+  providerConfigRef:
+    name: {{ $am.providerConfig.name }}
+    kind: {{ $am.providerConfig.kind }}
+
+# ==============================================================================
+# Usages: IAM Roles protect RolePolicyAttachments
+# ==============================================================================
+{{ $cpRoleReady := $obs.controlPlaneRole.ready }}
+
+{{ if and $cpRoleReady (get $readiness "iam-attach-cp-block-storage") }}
+---
+apiVersion: protection.crossplane.io/v1beta1
+kind: Usage
+metadata:
+  name: {{ $am.cluster.name }}-cp-role-protects-block-storage
+  labels: {{ $am.labels | toJson }}
+  annotations:
+    {{ setResourceNameAnnotation "usage-cp-role-block-storage" }}
+spec:
+  of:
+    apiVersion: iam.aws.m.upbound.io/v1beta1
+    kind: Role
+    resourceRef:
+      name: {{ $am.cluster.name }}-controlplane
+  by:
+    apiVersion: iam.aws.m.upbound.io/v1beta1
+    kind: RolePolicyAttachment
+    resourceRef:
+      name: {{ $am.cluster.name }}-cp-block-storage
+{{ end }}
+
+{{ if and $cpRoleReady (get $readiness "iam-attach-cp-cluster") }}
+---
+apiVersion: protection.crossplane.io/v1beta1
+kind: Usage
+metadata:
+  name: {{ $am.cluster.name }}-cp-role-protects-cluster-policy
+  labels: {{ $am.labels | toJson }}
+  annotations:
+    {{ setResourceNameAnnotation "usage-cp-role-cluster" }}
+spec:
+  of:
+    apiVersion: iam.aws.m.upbound.io/v1beta1
+    kind: Role
+    resourceRef:
+      name: {{ $am.cluster.name }}-controlplane
+  by:
+    apiVersion: iam.aws.m.upbound.io/v1beta1
+    kind: RolePolicyAttachment
+    resourceRef:
+      name: {{ $am.cluster.name }}-cp-cluster
+{{ end }}
+
+{{ if and $cpRoleReady (get $readiness "iam-attach-cp-compute") }}
+---
+apiVersion: protection.crossplane.io/v1beta1
+kind: Usage
+metadata:
+  name: {{ $am.cluster.name }}-cp-role-protects-compute
+  labels: {{ $am.labels | toJson }}
+  annotations:
+    {{ setResourceNameAnnotation "usage-cp-role-compute" }}
+spec:
+  of:
+    apiVersion: iam.aws.m.upbound.io/v1beta1
+    kind: Role
+    resourceRef:
+      name: {{ $am.cluster.name }}-controlplane
+  by:
+    apiVersion: iam.aws.m.upbound.io/v1beta1
+    kind: RolePolicyAttachment
+    resourceRef:
+      name: {{ $am.cluster.name }}-cp-compute
+{{ end }}
+
+{{ if and $cpRoleReady (get $readiness "iam-attach-cp-lb") }}
+---
+apiVersion: protection.crossplane.io/v1beta1
+kind: Usage
+metadata:
+  name: {{ $am.cluster.name }}-cp-role-protects-lb
+  labels: {{ $am.labels | toJson }}
+  annotations:
+    {{ setResourceNameAnnotation "usage-cp-role-lb" }}
+spec:
+  of:
+    apiVersion: iam.aws.m.upbound.io/v1beta1
+    kind: Role
+    resourceRef:
+      name: {{ $am.cluster.name }}-controlplane
+  by:
+    apiVersion: iam.aws.m.upbound.io/v1beta1
+    kind: RolePolicyAttachment
+    resourceRef:
+      name: {{ $am.cluster.name }}-cp-lb
+{{ end }}
+
+{{ if and $cpRoleReady (get $readiness "iam-attach-cp-network") }}
+---
+apiVersion: protection.crossplane.io/v1beta1
+kind: Usage
+metadata:
+  name: {{ $am.cluster.name }}-cp-role-protects-network
+  labels: {{ $am.labels | toJson }}
+  annotations:
+    {{ setResourceNameAnnotation "usage-cp-role-network" }}
+spec:
+  of:
+    apiVersion: iam.aws.m.upbound.io/v1beta1
+    kind: Role
+    resourceRef:
+      name: {{ $am.cluster.name }}-controlplane
+  by:
+    apiVersion: iam.aws.m.upbound.io/v1beta1
+    kind: RolePolicyAttachment
+    resourceRef:
+      name: {{ $am.cluster.name }}-cp-network
+{{ end }}
+
+{{ if and $cpRoleReady (get $readiness "iam-attach-cp-resource-tagging") }}
+---
+apiVersion: protection.crossplane.io/v1beta1
+kind: Usage
+metadata:
+  name: {{ $am.cluster.name }}-cp-role-protects-tagging
+  labels: {{ $am.labels | toJson }}
+  annotations:
+    {{ setResourceNameAnnotation "usage-cp-role-tagging" }}
+spec:
+  of:
+    apiVersion: iam.aws.m.upbound.io/v1beta1
+    kind: Role
+    resourceRef:
+      name: {{ $am.cluster.name }}-controlplane
+  by:
+    apiVersion: iam.aws.m.upbound.io/v1beta1
+    kind: RolePolicyAttachment
+    resourceRef:
+      name: {{ $am.cluster.name }}-cp-resource-tagging
+{{ end }}
+
+# IAM Policy (resource-tagging) protects its RolePolicyAttachment
+{{ if and $obs.taggingPolicy.ready (get $readiness "iam-attach-cp-resource-tagging") }}
+---
+apiVersion: protection.crossplane.io/v1beta1
+kind: Usage
+metadata:
+  name: {{ $am.cluster.name }}-policy-protects-attachment
+  labels: {{ $am.labels | toJson }}
+  annotations:
+    {{ setResourceNameAnnotation "usage-policy-attachment" }}
+spec:
+  of:
+    apiVersion: iam.aws.m.upbound.io/v1beta1
+    kind: Policy
+    resourceRef:
+      name: {{ $am.cluster.name }}-resource-tagging
+  by:
+    apiVersion: iam.aws.m.upbound.io/v1beta1
+    kind: RolePolicyAttachment
+    resourceRef:
+      name: {{ $am.cluster.name }}-cp-resource-tagging
+{{ end }}
+
+# Node role protects node policy attachments
+{{ $nodeRoleReady := $obs.nodeRole.ready }}
+
+{{ if and $nodeRoleReady (get $readiness "iam-attach-node-ecr") }}
+---
+apiVersion: protection.crossplane.io/v1beta1
+kind: Usage
+metadata:
+  name: {{ $am.cluster.name }}-node-role-protects-ecr
+  labels: {{ $am.labels | toJson }}
+  annotations:
+    {{ setResourceNameAnnotation "usage-node-role-ecr" }}
+spec:
+  of:
+    apiVersion: iam.aws.m.upbound.io/v1beta1
+    kind: Role
+    resourceRef:
+      name: {{ $am.cluster.name }}-nodegroup
+  by:
+    apiVersion: iam.aws.m.upbound.io/v1beta1
+    kind: RolePolicyAttachment
+    resourceRef:
+      name: {{ $am.cluster.name }}-node-ecr
+{{ end }}
+
+{{ if and $nodeRoleReady (get $readiness "iam-attach-node-worker") }}
+---
+apiVersion: protection.crossplane.io/v1beta1
+kind: Usage
+metadata:
+  name: {{ $am.cluster.name }}-node-role-protects-worker
+  labels: {{ $am.labels | toJson }}
+  annotations:
+    {{ setResourceNameAnnotation "usage-node-role-worker" }}
+spec:
+  of:
+    apiVersion: iam.aws.m.upbound.io/v1beta1
+    kind: Role
+    resourceRef:
+      name: {{ $am.cluster.name }}-nodegroup
+  by:
+    apiVersion: iam.aws.m.upbound.io/v1beta1
+    kind: RolePolicyAttachment
+    resourceRef:
+      name: {{ $am.cluster.name }}-node-worker
+{{ end }}
+{{ end }}

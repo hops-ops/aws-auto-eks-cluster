@@ -1,0 +1,19 @@
+apiVersion: iam.aws.m.upbound.io/v1beta1
+kind: Role
+metadata:
+  name: test-cluster-controlplane
+  annotations:
+    crossplane.io/composition-resource-name: iam-role-controlplane
+    gotemplating.fn.crossplane.io/composition-resource-name: iam-role-controlplane
+status:
+  conditions:
+    - type: Ready
+      status: "True"
+      reason: Available
+    - type: Synced
+      status: "True"
+  atProvider:
+    arn: arn:aws:iam::123456789012:role/test-cluster-controlplane
+    name: test-cluster-controlplane
+    id: test-cluster-controlplane
+    uniqueId: AROAEXAMPLEID123456789

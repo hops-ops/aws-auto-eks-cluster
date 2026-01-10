@@ -1,0 +1,150 @@
+# code: language=yaml
+# Karpenter NodeClass and NodePool
+
+{{ $am := $state.automode }}
+{{ $obs := $state.observed }}
+
+{{ if $am.render.nodeConfig }}
+# NodeClass
+---
+apiVersion: kubernetes.m.crossplane.io/v1alpha1
+kind: Object
+metadata:
+  name: {{ $am.cluster.name }}-{{ $am.nodeConfig.nodeClass.name }}
+  labels: {{ $am.labels | toJson }}
+  annotations:
+    {{ setResourceNameAnnotation "nodeclass" }}
+spec:
+  managementPolicies: {{ $am.managementPolicies | toJson }}
+  forProvider:
+    manifest:
+      apiVersion: eks.amazonaws.com/v1
+      kind: NodeClass
+      metadata:
+        name: {{ $am.nodeConfig.nodeClass.name }}
+      spec:
+        ephemeralStorage:
+          iops: {{ $am.nodeConfig.nodeClass.ephemeralStorage.iops }}
+          size: {{ $am.nodeConfig.nodeClass.ephemeralStorage.size }}
+          throughput: {{ $am.nodeConfig.nodeClass.ephemeralStorage.throughput }}
+        networkPolicy: DefaultAllow
+        networkPolicyEventLogs: Disabled
+        role: {{ $am.cluster.name }}-nodegroup
+        securityGroupSelectorTerms:
+        - id: {{ $obs.cluster.securityGroupId }}
+        subnetSelectorTerms:
+        {{- range $subnet := $am.cluster.subnetIds }}
+        - id: {{ $subnet }}
+        {{- end }}
+        amiFamily: {{ $am.nodeConfig.nodeClass.amiFamily }}
+        tags: {{ $am.tags | toJson }}
+  providerConfigRef:
+    name: {{ $am.cluster.name }}
+    kind: ProviderConfig
+
+{{ if $am.nodeConfig.nodePool.enabled }}
+# NodePool
+---
+apiVersion: kubernetes.m.crossplane.io/v1alpha1
+kind: Object
+metadata:
+  name: {{ $am.cluster.name }}-{{ $am.nodeConfig.nodePool.name }}
+  labels: {{ $am.labels | toJson }}
+  annotations:
+    {{ setResourceNameAnnotation "nodepool" }}
+spec:
+  managementPolicies: {{ $am.managementPolicies | toJson }}
+  forProvider:
+    manifest:
+      apiVersion: karpenter.sh/v1
+      kind: NodePool
+      metadata:
+        name: {{ $am.nodeConfig.nodePool.name }}
+      spec:
+        disruption:
+          budgets:
+          {{- range $budget := $am.nodeConfig.nodePool.disruption.budgets }}
+          - nodes: {{ $budget.nodes | default "10%" }}
+          {{- end }}
+          consolidateAfter: {{ $am.nodeConfig.nodePool.disruption.consolidateAfter }}
+          consolidationPolicy: {{ $am.nodeConfig.nodePool.disruption.consolidationPolicy }}
+        template:
+          metadata:
+            labels:
+              karpenter/nodepool: {{ $am.nodeConfig.nodePool.name }}
+          spec:
+            expireAfter: {{ $am.nodeConfig.nodePool.expireAfter }}
+            nodeClassRef:
+              group: eks.amazonaws.com
+              kind: NodeClass
+              name: {{ $am.nodeConfig.nodeClass.name }}
+            requirements:
+            - key: karpenter.sh/capacity-type
+              operator: In
+              values:
+              - {{ $am.nodeConfig.nodePool.capacityType }}
+            - key: eks.amazonaws.com/instance-category
+              operator: In
+              values: {{ $am.nodeConfig.nodePool.instanceCategories | toJson }}
+            - key: eks.amazonaws.com/instance-generation
+              operator: Gt
+              values:
+              - "{{ $am.nodeConfig.nodePool.minGeneration }}"
+            - key: kubernetes.io/arch
+              operator: In
+              values: {{ $am.nodeConfig.nodePool.architectures | toJson }}
+            - key: kubernetes.io/os
+              operator: In
+              values:
+              - linux
+            {{- if $am.nodeConfig.nodePool.minInstanceSize }}
+            - key: eks.amazonaws.com/instance-size
+              operator: NotIn
+              values:
+              {{- if eq $am.nodeConfig.nodePool.minInstanceSize "large" }}
+              - nano
+              - micro
+              - small
+              - medium
+              {{- else if eq $am.nodeConfig.nodePool.minInstanceSize "medium" }}
+              - nano
+              - micro
+              - small
+              {{- else if eq $am.nodeConfig.nodePool.minInstanceSize "small" }}
+              - nano
+              - micro
+              {{- end }}
+            {{- end }}
+            {{- if $am.nodeConfig.nodePool.maxInstanceSize }}
+            - key: eks.amazonaws.com/instance-size
+              operator: In
+              values:
+              {{- if eq $am.nodeConfig.nodePool.maxInstanceSize "4xlarge" }}
+              - medium
+              - large
+              - xlarge
+              - 2xlarge
+              - 3xlarge
+              - 4xlarge
+              {{- else if eq $am.nodeConfig.nodePool.maxInstanceSize "8xlarge" }}
+              - medium
+              - large
+              - xlarge
+              - 2xlarge
+              - 3xlarge
+              - 4xlarge
+              - 6xlarge
+              - 8xlarge
+              {{- else if eq $am.nodeConfig.nodePool.maxInstanceSize "2xlarge" }}
+              - medium
+              - large
+              - xlarge
+              - 2xlarge
+              {{- end }}
+            {{- end }}
+            terminationGracePeriod: 24h0m0s
+  providerConfigRef:
+    name: {{ $am.cluster.name }}
+    kind: ProviderConfig
+{{ end }}
+{{ end }}

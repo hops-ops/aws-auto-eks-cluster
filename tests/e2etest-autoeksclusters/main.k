@@ -1,0 +1,185 @@
+# E2E Test for AutoEKSCluster with Network dependency
+# =====================================================
+# Tests AutoEKSCluster creation with Network as a dependency.
+#
+# This test creates:
+# 1. A Network (from aws-network configuration) to provision VPC and subnets
+# 2. An AutoEKSCluster using subnet selector to find Network's private subnets
+#
+# The Network labels its subnets, and AutoEKSCluster uses subnetSelector to find them.
+# This removes the need for hardcoded subnet IDs.
+#
+# Prerequisites:
+# 1. Create secrets/aws-creds file with AWS credentials in INI format:
+#    [default]
+#    aws_access_key_id = AKIA...
+#    aws_secret_access_key = ...
+#
+# 2. Run: make e2e
+
+import base64
+import file
+import datetime
+import math
+import models.io.upbound.dev.meta.v1alpha1 as metav1alpha1
+import models.ai.com.ops.hops.aws.v1alpha1 as awsv1alpha1
+
+# Read AWS credentials from local file (gitignored)
+_creds = file.read("secrets/aws-creds")
+_base64_creds = base64.encode(_creds)
+
+# Generate unique name using timestamp to avoid CI conflicts
+_now = str(int(math.floor(datetime.ticks())))
+_test_name = "e2e-autoeks-" + _now
+_namespace = "default"
+_region = "us-east-2"  # Match CI workflow region
+_account_id = "034489662075"  # CI test account
+
+_items = [
+    metav1alpha1.E2ETest {
+        metadata.name = "autoekscluster"
+        spec = {
+            crossplane = {
+                version = "2.0.2-up.5"
+                autoUpgrade.channel = "None"
+            }
+            defaultConditions = ["Ready"]
+            timeoutSeconds = 5400  # 90 minutes for EKS cluster creation
+            cleanupTimeoutSeconds = 1800  # 30 minutes for cleanup
+            skipDelete = False
+
+            # ExtraResources: AWS credentials and ProviderConfig
+            extraResources = [
+                # AWS credentials secret
+                {
+                    apiVersion = "v1"
+                    kind = "Secret"
+                    metadata = {
+                        name = "aws-creds"
+                        namespace = _namespace
+                    }
+                    data = {
+                        creds = _base64_creds
+                    }
+                }
+                # AWS ProviderConfig using Secret credentials
+                {
+                    apiVersion = "aws.m.upbound.io/v1beta1"
+                    kind = "ProviderConfig"
+                    metadata = {
+                        name = "default"
+                        namespace = _namespace
+                    }
+                    spec = {
+                        credentials = {
+                            source = "Secret"
+                            secretRef = {
+                                namespace = _namespace
+                                name = "aws-creds"
+                                key = "creds"
+                            }
+                        }
+                    }
+                }
+            ]
+
+            # InitResources: Network created first (applied before manifests)
+            # The Network will create VPC and subnets with labels for selection
+            # Note: Using untyped dict since Network is from external aws-network config
+            initResources = [
+                {
+                    apiVersion = "aws.hops.ops.com.ai/v1alpha1"
+                    kind = "Network"
+                    metadata = {
+                        name = _test_name
+                        namespace = _namespace
+                    }
+                    spec = {
+                        region = _region
+                        providerConfigRef = {
+                            name = "default"
+                            kind = "ProviderConfig"
+                        }
+                        tags = {
+                            "e2etest" = "true"
+                            "test-run" = _now
+                        }
+                        # Use simple VPC CIDR (no IPAM for this test)
+                        vpc = {
+                            cidr = "10.200.0.0/16"
+                        }
+                        # Subnet layout - subnets calculated from VPC CIDR
+                        subnetLayout = {
+                            availabilityZones = ["a", "b"]
+                            public = {
+                                enabled = True
+                                netmaskLength = 24
+                            }
+                            private = {
+                                enabled = True
+                                netmaskLength = 20
+                            }
+                        }
+                        # Enable NAT for private subnet egress
+                        nat = {
+                            enabled = True
+                            strategy = "SingleAz"
+                        }
+                    }
+                }
+            ]
+
+            # Manifests: AutoEKSCluster (applied after initResources are Ready)
+            # Uses subnetSelector to find Network's private subnets by label
+            manifests = [
+                awsv1alpha1.AutoEKSCluster {
+                    metadata = {
+                        name = _test_name
+                        namespace = _namespace
+                    }
+                    spec = {
+                        clusterName = _test_name
+                        region = _region
+                        accountId = _account_id
+                        version = "1.31"
+                        # Use subnet selector to find private subnets from Network
+                        subnetSelector = {
+                            matchLabels = {
+                                "hops.ops.com.ai/network" = _test_name
+                                "hops.ops.com.ai/tier" = "private"
+                            }
+                        }
+                        providerConfigRef = {
+                            name = "default"
+                            kind = "ProviderConfig"
+                        }
+                        tags = {
+                            "e2etest" = "true"
+                            "test-run" = _now
+                        }
+                        # Use minimal node config for faster test
+                        nodeConfig = {
+                            enabled = True
+                            nodePool = {
+                                enabled = True
+                                capacityType = "spot"
+                                instanceCategories = ["m"]
+                                architectures = ["amd64"]
+                                instanceSizes = {
+                                    min = "medium"
+                                    max = "xlarge"
+                                }
+                            }
+                        }
+                        # Enable OIDC for testing IRSA functionality
+                        oidc = {
+                            enabled = True
+                        }
+                    }
+                }
+            ]
+        }
+    }
+]
+
+items = _items

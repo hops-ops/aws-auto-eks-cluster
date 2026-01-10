@@ -1,0 +1,14 @@
+apiVersion: aws.hops.ops.com.ai/v1alpha1
+kind: AutoEKSCluster
+metadata:
+  name: minimal-cluster
+  namespace: default
+spec:
+  clusterName: minimal-cluster
+  region: us-east-1
+  accountId: "123456789012"
+  version: "1.31"
+  subnetIds:
+    - subnet-aaaaaaaa
+    - subnet-bbbbbbbb
+    - subnet-cccccccc

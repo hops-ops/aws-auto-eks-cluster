@@ -1,0 +1,45 @@
+# code: language=yaml
+# Security Group Ingress Rules (optional)
+
+{{ $am := $state.automode }}
+{{ $obs := $state.observed }}
+
+{{ if $am.render.securityGroupRules }}
+{{- range $i, $rule := $am.securityGroupRules.ingress }}
+{{- $ruleName := printf "%s-sg-rule-%d" $am.cluster.name $i }}
+---
+apiVersion: ec2.aws.m.upbound.io/v1beta1
+kind: SecurityGroupIngressRule
+metadata:
+  name: {{ $ruleName }}
+  labels: {{ $am.labels | toJson }}
+  annotations:
+    {{ setResourceNameAnnotation (printf "sg-ingress-%d" $i) }}
+spec:
+  managementPolicies: {{ $am.managementPolicies | toJson }}
+  forProvider:
+    region: {{ $am.cluster.region }}
+    {{- if $rule.cidrIpv4 }}
+    cidrIpv4: {{ $rule.cidrIpv4 }}
+    {{- end }}
+    {{- if $rule.cidrIpv6 }}
+    cidrIpv6: {{ $rule.cidrIpv6 }}
+    {{- end }}
+    {{- if $rule.referencedSecurityGroupId }}
+    referencedSecurityGroupId: {{ $rule.referencedSecurityGroupId }}
+    {{- end }}
+    description: {{ $rule.description }}
+    {{- if $rule.fromPort }}
+    fromPort: {{ $rule.fromPort }}
+    {{- end }}
+    {{- if $rule.toPort }}
+    toPort: {{ $rule.toPort }}
+    {{- end }}
+    ipProtocol: {{ $rule.ipProtocol }}
+    securityGroupId: {{ $obs.cluster.securityGroupId }}
+    tags: {{ $am.tags | toJson }}
+  providerConfigRef:
+    name: {{ $am.providerConfig.name }}
+    kind: {{ $am.providerConfig.kind }}
+{{- end }}
+{{ end }}
