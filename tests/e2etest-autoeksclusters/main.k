@@ -47,8 +47,10 @@ _items = [
             timeoutSeconds = 5400  # 90 minutes for EKS cluster creation
             cleanupTimeoutSeconds = 1800  # 30 minutes for cleanup
             skipDelete = False
+            # initResources: Called before package install
 
-            # ExtraResources: Credentials, ProviderConfig, and dependency packages
+            # extraResources: Credentials, ProviderConfig, and dependency packages
+            # Applied after package install
             extraResources = [
                 # AWS credentials secret
                 {
@@ -92,12 +94,6 @@ _items = [
                         package = "ghcr.io/hops-ops/aws-network:v0.4.0"
                     }
                 }
-            ]
-
-            # InitResources: Network created first (applied before manifests)
-            # The Network will create VPC and subnets with labels for selection
-            # Note: Using untyped dict since Network is from external aws-network config
-            initResources = [
                 {
                     apiVersion = "aws.hops.ops.com.ai/v1alpha1"
                     kind = "Network"
