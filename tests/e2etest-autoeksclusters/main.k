@@ -48,6 +48,19 @@ _items = [
             cleanupTimeoutSeconds = 1800  # 30 minutes for cleanup
             skipDelete = False
             # initResources: Called before package install
+            initResources = [
+                # aws-network Configuration package (provides Network XRD)
+                {
+                    apiVersion = "pkg.crossplane.io/v1"
+                    kind = "Configuration"
+                    metadata = {
+                        name = "aws-network"
+                    }
+                    spec = {
+                        package = "ghcr.io/hops-ops/aws-network:v0.4.0"
+                    }
+                }
+            ]
 
             # extraResources: Credentials, ProviderConfig, and dependency packages
             # Applied after package install
@@ -81,17 +94,6 @@ _items = [
                                 key = "creds"
                             }
                         }
-                    }
-                }
-                # aws-network Configuration package (provides Network XRD)
-                {
-                    apiVersion = "pkg.crossplane.io/v1"
-                    kind = "Configuration"
-                    metadata = {
-                        name = "aws-network"
-                    }
-                    spec = {
-                        package = "ghcr.io/hops-ops/aws-network:v0.4.0"
                     }
                 }
                 {
