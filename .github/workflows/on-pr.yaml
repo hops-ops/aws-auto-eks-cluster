@@ -20,8 +20,13 @@ permissions:
   id-token: write
 
 jobs:
+
+  setup:
+    uses: unbounded-tech/workflows-crossplane/.github/workflows/setup.yaml@v2.9.0
+
   validate:
-    uses: unbounded-tech/workflows-crossplane/.github/workflows/validate.yaml@v2.7.0
+    needs: setup
+    uses: unbounded-tech/workflows-crossplane/.github/workflows/validate.yaml@v2.9.0
     with:
       examples: |
         [
@@ -37,10 +42,12 @@ jobs:
       error_on_missing_schemas: true
 
   test:
-    uses: unbounded-tech/workflows-crossplane/.github/workflows/test.yaml@v2.7.0
+    needs: setup
+    uses: unbounded-tech/workflows-crossplane/.github/workflows/test.yaml@v2.9.0
 
   e2e:
-    uses: unbounded-tech/workflows-crossplane/.github/workflows/e2e.yaml@v2.7.0
+    needs: setup
+    uses: unbounded-tech/workflows-crossplane/.github/workflows/e2e.yaml@v2.9.0
     with:
       aws: true
       aws-use-oidc: true
@@ -49,8 +56,10 @@ jobs:
       timeout-minutes: 30
 
   publish:
-    needs: [validate, test]
-    uses: unbounded-tech/workflows-crossplane/.github/workflows/publish.yaml@v2.7.0
+    needs: 
+      - validate
+      - test
+    uses: unbounded-tech/workflows-crossplane/.github/workflows/publish.yaml@v2.9.0
     secrets: inherit
     with:
       tag: pr-${{ github.event.pull_request.number }}-${{ github.sha }}

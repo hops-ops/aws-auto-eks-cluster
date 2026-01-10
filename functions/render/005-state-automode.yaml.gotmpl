@@ -53,13 +53,14 @@
     "controlPlaneRoleArn" $controlPlaneRoleArn
     "nodeRoleArn" $nodeRoleArn
     "permissionsBoundary" $eff.permissionsBoundary
+    "controlPlaneRole" $eff.iam.controlPlaneRole
+    "nodeRole" $eff.iam.nodeRole
   )
 
   "tags" $eff.tags
   "labels" $eff.labels
   "managementPolicies" $eff.managementPolicies
   "externalName" $eff.externalName
-  "iam" $eff.iam
   "kms" $eff.kms
 
   "accessEntries" $eff.accessEntries

@@ -129,10 +129,9 @@ _items = [
                                 netmaskLength = 20
                             }
                         }
-                        # Enable NAT for private subnet egress
+                        # Disable NAT to speed up test (EKS Auto Mode uses VPC endpoints)
                         nat = {
-                            enabled = True
-                            strategy = "SingleAz"
+                            enabled = False
                         }
                     }
                 }
