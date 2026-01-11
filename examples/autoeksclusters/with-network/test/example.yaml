@@ -1,0 +1,57 @@
+# AutoEKSCluster with Network integration using subnet selector
+#
+# This example shows how to use subnetSelector to automatically find
+# subnets created by the aws-network configuration.
+#
+# Prerequisites:
+# 1. Deploy an aws-network Network resource first
+# 2. The Network must label its subnets with:
+#    - networks.aws.hops.ops.com.ai/network-id: <network-name>
+#    - access: private|public
+#
+apiVersion: aws.hops.ops.com.ai/v1alpha1
+kind: AutoEKSCluster
+metadata:
+  name: my-cluster
+  namespace: infra
+spec:
+  clusterName: my-cluster
+  region: us-west-2
+  accountId: "123456789012"
+  version: "1.31"
+
+  # Use subnet selector to find Network's private subnets
+  subnetSelector:
+    matchLabels:
+      hops.ops.com.ai/network: my-network
+      hops.ops.com.ai/tier: private
+
+  providerConfigRef:
+    name: default
+    kind: ProviderConfig
+
+  tags:
+    environment: production
+    team: platform
+
+  # Cluster endpoint configuration
+  privateAccess: true
+  publicAccess: false
+
+  # KMS encryption for secrets
+  encryptionEnabled: true
+
+  # Node configuration
+  nodeConfig:
+    enabled: true
+    nodePool:
+      capacityType: spot
+      instanceCategories: ["m", "c", "r"]
+      architectures: ["amd64", "arm64"]
+      instanceSizes:
+        min: medium
+        max: 4xlarge
+
+  # OIDC for IRSA (prefer Pod Identity for new workloads)
+  oidc:
+    enabled: true

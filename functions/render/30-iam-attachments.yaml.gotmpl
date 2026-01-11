@@ -165,10 +165,10 @@ spec:
 apiVersion: protection.crossplane.io/v1beta1
 kind: Usage
 metadata:
-  name: {{ $am.cluster.name }}-cp-role-protects-block-storage
+  name: {{ $am.cluster.name }}-of-cp-role-by-attach-block-storage
   labels: {{ $am.labels | toJson }}
   annotations:
-    {{ setResourceNameAnnotation "usage-cp-role-block-storage" }}
+    {{ setResourceNameAnnotation "of-cp-role-by-attach-block-storage" }}
 spec:
   of:
     apiVersion: iam.aws.m.upbound.io/v1beta1
@@ -187,10 +187,10 @@ spec:
 apiVersion: protection.crossplane.io/v1beta1
 kind: Usage
 metadata:
-  name: {{ $am.cluster.name }}-cp-role-protects-cluster-policy
+  name: {{ $am.cluster.name }}-of-cp-role-by-attach-cluster
   labels: {{ $am.labels | toJson }}
   annotations:
-    {{ setResourceNameAnnotation "usage-cp-role-cluster" }}
+    {{ setResourceNameAnnotation "of-cp-role-by-attach-cluster" }}
 spec:
   of:
     apiVersion: iam.aws.m.upbound.io/v1beta1
@@ -209,10 +209,10 @@ spec:
 apiVersion: protection.crossplane.io/v1beta1
 kind: Usage
 metadata:
-  name: {{ $am.cluster.name }}-cp-role-protects-compute
+  name: {{ $am.cluster.name }}-of-cp-role-by-attach-compute
   labels: {{ $am.labels | toJson }}
   annotations:
-    {{ setResourceNameAnnotation "usage-cp-role-compute" }}
+    {{ setResourceNameAnnotation "of-cp-role-by-attach-compute" }}
 spec:
   of:
     apiVersion: iam.aws.m.upbound.io/v1beta1
@@ -231,10 +231,10 @@ spec:
 apiVersion: protection.crossplane.io/v1beta1
 kind: Usage
 metadata:
-  name: {{ $am.cluster.name }}-cp-role-protects-lb
+  name: {{ $am.cluster.name }}-of-cp-role-by-attach-lb
   labels: {{ $am.labels | toJson }}
   annotations:
-    {{ setResourceNameAnnotation "usage-cp-role-lb" }}
+    {{ setResourceNameAnnotation "of-cp-role-by-attach-lb" }}
 spec:
   of:
     apiVersion: iam.aws.m.upbound.io/v1beta1
@@ -253,10 +253,10 @@ spec:
 apiVersion: protection.crossplane.io/v1beta1
 kind: Usage
 metadata:
-  name: {{ $am.cluster.name }}-cp-role-protects-network
+  name: {{ $am.cluster.name }}-of-cp-role-by-attach-network
   labels: {{ $am.labels | toJson }}
   annotations:
-    {{ setResourceNameAnnotation "usage-cp-role-network" }}
+    {{ setResourceNameAnnotation "of-cp-role-by-attach-network" }}
 spec:
   of:
     apiVersion: iam.aws.m.upbound.io/v1beta1
@@ -275,10 +275,10 @@ spec:
 apiVersion: protection.crossplane.io/v1beta1
 kind: Usage
 metadata:
-  name: {{ $am.cluster.name }}-cp-role-protects-tagging
+  name: {{ $am.cluster.name }}-of-cp-role-by-attach-tagging
   labels: {{ $am.labels | toJson }}
   annotations:
-    {{ setResourceNameAnnotation "usage-cp-role-tagging" }}
+    {{ setResourceNameAnnotation "of-cp-role-by-attach-tagging" }}
 spec:
   of:
     apiVersion: iam.aws.m.upbound.io/v1beta1
@@ -298,10 +298,10 @@ spec:
 apiVersion: protection.crossplane.io/v1beta1
 kind: Usage
 metadata:
-  name: {{ $am.cluster.name }}-policy-protects-attachment
+  name: {{ $am.cluster.name }}-of-policy-by-attach-tagging
   labels: {{ $am.labels | toJson }}
   annotations:
-    {{ setResourceNameAnnotation "usage-policy-attachment" }}
+    {{ setResourceNameAnnotation "of-policy-by-attach-tagging" }}
 spec:
   of:
     apiVersion: iam.aws.m.upbound.io/v1beta1
@@ -323,10 +323,10 @@ spec:
 apiVersion: protection.crossplane.io/v1beta1
 kind: Usage
 metadata:
-  name: {{ $am.cluster.name }}-node-role-protects-ecr
+  name: {{ $am.cluster.name }}-of-node-role-by-attach-ecr
   labels: {{ $am.labels | toJson }}
   annotations:
-    {{ setResourceNameAnnotation "usage-node-role-ecr" }}
+    {{ setResourceNameAnnotation "of-node-role-by-attach-ecr" }}
 spec:
   of:
     apiVersion: iam.aws.m.upbound.io/v1beta1
@@ -345,10 +345,10 @@ spec:
 apiVersion: protection.crossplane.io/v1beta1
 kind: Usage
 metadata:
-  name: {{ $am.cluster.name }}-node-role-protects-worker
+  name: {{ $am.cluster.name }}-of-node-role-by-attach-worker
   labels: {{ $am.labels | toJson }}
   annotations:
-    {{ setResourceNameAnnotation "usage-node-role-worker" }}
+    {{ setResourceNameAnnotation "of-node-role-by-attach-worker" }}
 spec:
   of:
     apiVersion: iam.aws.m.upbound.io/v1beta1

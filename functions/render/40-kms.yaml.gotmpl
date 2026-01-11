@@ -54,10 +54,10 @@ spec:
 apiVersion: protection.crossplane.io/v1beta1
 kind: Usage
 metadata:
-  name: {{ $am.cluster.name }}-kms-protects-alias
+  name: {{ $am.cluster.name }}-of-kms-by-alias
   labels: {{ $am.labels | toJson }}
   annotations:
-    {{ setResourceNameAnnotation "usage-kms-alias" }}
+    {{ setResourceNameAnnotation "of-kms-by-alias" }}
 spec:
   of:
     apiVersion: kms.aws.m.upbound.io/v1beta1

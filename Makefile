@@ -27,7 +27,8 @@ EXAMPLES := \
     examples/autoeksclusters/import.yaml:: \
     examples/autoeksclusters/test/example.yaml::examples/autoeksclusters/test/mocks/observed-resources/steps/1 \
     examples/autoeksclusters/test/example.yaml::examples/autoeksclusters/test/mocks/observed-resources/steps/2 \
-    examples/autoeksclusters/test/example.yaml::examples/autoeksclusters/test/mocks/observed-resources/steps/3
+    examples/autoeksclusters/test/example.yaml::examples/autoeksclusters/test/mocks/observed-resources/steps/3 \
+    examples/autoeksclusters/with-network/test/example.yaml::examples/autoeksclusters/with-network/test/mocks/observed-resources/steps/1
 
 # Render all examples (parallel execution, output shown per-job when complete)
 render\:all:

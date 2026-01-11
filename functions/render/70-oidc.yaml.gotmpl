@@ -38,10 +38,10 @@ spec:
 apiVersion: protection.crossplane.io/v1beta1
 kind: Usage
 metadata:
-  name: {{ $am.cluster.name }}-cluster-protects-oidc
+  name: {{ $am.cluster.name }}-of-cluster-by-oidc
   labels: {{ $am.labels | toJson }}
   annotations:
-    {{ setResourceNameAnnotation "usage-cluster-oidc" }}
+    {{ setResourceNameAnnotation "of-cluster-by-oidc" }}
 spec:
   of:
     apiVersion: eks.aws.m.upbound.io/v1beta1

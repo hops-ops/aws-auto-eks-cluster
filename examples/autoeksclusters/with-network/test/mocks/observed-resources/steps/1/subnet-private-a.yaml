@@ -1,0 +1,19 @@
+apiVersion: ec2.aws.m.upbound.io/v1beta1
+kind: Subnet
+metadata:
+  name: my-network-private-a
+  labels:
+    hops.ops.com.ai/network: my-network
+    hops.ops.com.ai/tier: private
+status:
+  conditions:
+    - type: Ready
+      status: "True"
+    - type: Synced
+      status: "True"
+  atProvider:
+    id: subnet-private-a
+    arn: arn:aws:ec2:us-west-2:123456789012:subnet/subnet-private-a
+    vpcId: vpc-0123456789abcdef0
+    cidrBlock: "10.0.0.0/20"
+    availabilityZone: us-west-2a

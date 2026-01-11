@@ -113,10 +113,10 @@ spec:
 apiVersion: protection.crossplane.io/v1beta1
 kind: Usage
 metadata:
-  name: {{ $am.cluster.name }}-node-role-protects-access-entry
+  name: {{ $am.cluster.name }}-of-node-role-by-access-entry-node
   labels: {{ $am.labels | toJson }}
   annotations:
-    {{ setResourceNameAnnotation "usage-node-role-access" }}
+    {{ setResourceNameAnnotation "of-node-role-by-access-entry-node" }}
 spec:
   of:
     apiVersion: iam.aws.m.upbound.io/v1beta1
@@ -136,10 +136,10 @@ spec:
 apiVersion: protection.crossplane.io/v1beta1
 kind: Usage
 metadata:
-  name: {{ $am.cluster.name }}-cluster-protects-node-access
+  name: {{ $am.cluster.name }}-of-cluster-by-access-entry-node
   labels: {{ $am.labels | toJson }}
   annotations:
-    {{ setResourceNameAnnotation "usage-cluster-node-access" }}
+    {{ setResourceNameAnnotation "of-cluster-by-access-entry-node" }}
 spec:
   of:
     apiVersion: eks.aws.m.upbound.io/v1beta1
@@ -159,10 +159,10 @@ spec:
 apiVersion: protection.crossplane.io/v1beta1
 kind: Usage
 metadata:
-  name: {{ $am.cluster.name }}-cluster-protects-node-policy
+  name: {{ $am.cluster.name }}-of-cluster-by-access-policy-node
   labels: {{ $am.labels | toJson }}
   annotations:
-    {{ setResourceNameAnnotation "usage-cluster-node-policy" }}
+    {{ setResourceNameAnnotation "of-cluster-by-access-policy-node" }}
 spec:
   of:
     apiVersion: eks.aws.m.upbound.io/v1beta1
@@ -186,10 +186,10 @@ spec:
 apiVersion: protection.crossplane.io/v1beta1
 kind: Usage
 metadata:
-  name: {{ $am.cluster.name }}-cluster-protects-{{ $entryResourceName }}
+  name: {{ $am.cluster.name }}-of-cluster-by-{{ $entryResourceName }}
   labels: {{ $am.labels | toJson }}
   annotations:
-    {{ setResourceNameAnnotation (printf "usage-cluster-%s" $entryResourceName) }}
+    {{ setResourceNameAnnotation (printf "of-cluster-by-%s" $entryResourceName) }}
 spec:
   of:
     apiVersion: eks.aws.m.upbound.io/v1beta1
@@ -212,10 +212,10 @@ spec:
 apiVersion: protection.crossplane.io/v1beta1
 kind: Usage
 metadata:
-  name: {{ $am.cluster.name }}-cluster-protects-{{ $policyResourceName }}
+  name: {{ $am.cluster.name }}-of-cluster-by-{{ $policyResourceName }}
   labels: {{ $am.labels | toJson }}
   annotations:
-    {{ setResourceNameAnnotation (printf "usage-cluster-%s" $policyResourceName) }}
+    {{ setResourceNameAnnotation (printf "of-cluster-by-%s" $policyResourceName) }}
 spec:
   of:
     apiVersion: eks.aws.m.upbound.io/v1beta1
