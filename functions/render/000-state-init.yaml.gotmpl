@@ -23,6 +23,7 @@
 # Build spec.effective (spec with defaults applied)
 # ==============================================================================
 {{ $providerConfigRef := $spec.providerConfigRef | default (dict) }}
+{{ $kubernetesProviderConfigRef := $spec.kubernetesProviderConfigRef | default (dict) }}
 {{ $nodeConfig := $spec.nodeConfig | default (dict) }}
 {{ $nodeClassConfig := $nodeConfig.nodeClass | default (dict) }}
 {{ $ephemeralStorage := $nodeClassConfig.ephemeralStorage | default (dict) }}
@@ -51,6 +52,10 @@
   "providerConfigRef" (dict
     "name" ($providerConfigRef.name | default "default")
     "kind" ($providerConfigRef.kind | default "ProviderConfig")
+  )
+  "kubernetesProviderConfigRef" (dict
+    "name" ($kubernetesProviderConfigRef.name | default "default")
+    "kind" ($kubernetesProviderConfigRef.kind | default "ProviderConfig")
   )
   "tags" $tags
   "labels" $labels

@@ -1,0 +1,14 @@
+apiVersion: kubernetes.m.crossplane.io/v1alpha1
+kind: Object
+metadata:
+  name: test-cluster-default
+  annotations:
+    crossplane.io/composition-resource-name: nodeclass
+    gotemplating.fn.crossplane.io/composition-resource-name: nodeclass
+status:
+  conditions:
+    - type: Ready
+      status: "True"
+      reason: Available
+    - type: Synced
+      status: "True"

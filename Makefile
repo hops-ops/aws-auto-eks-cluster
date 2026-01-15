@@ -20,6 +20,8 @@ build:
 # Step 1: IAM roles/policy/KMS ready -> renders cluster, attachments
 # Step 2: Cluster ready -> renders ClusterAuth, access entries, OIDC
 # Step 3: ClusterAuth ready -> renders ProviderConfigs, NodeClass/NodePool
+# Step 4: ProviderConfigs ready -> renders Usage for ProviderConfig->ClusterAuth ordering
+# Step 5: NodeClass/NodePool ready -> renders Usage for deletion ordering
 EXAMPLES := \
     examples/autoeksclusters/minimal.yaml:: \
     examples/autoeksclusters/standard.yaml:: \
@@ -28,6 +30,8 @@ EXAMPLES := \
     examples/autoeksclusters/test/example.yaml::examples/autoeksclusters/test/mocks/observed-resources/steps/1 \
     examples/autoeksclusters/test/example.yaml::examples/autoeksclusters/test/mocks/observed-resources/steps/2 \
     examples/autoeksclusters/test/example.yaml::examples/autoeksclusters/test/mocks/observed-resources/steps/3 \
+    examples/autoeksclusters/test/example.yaml::examples/autoeksclusters/test/mocks/observed-resources/steps/4 \
+    examples/autoeksclusters/test/example.yaml::examples/autoeksclusters/test/mocks/observed-resources/steps/5 \
     examples/autoeksclusters/with-network/test/example.yaml::examples/autoeksclusters/with-network/test/mocks/observed-resources/steps/1
 
 # Render all examples (parallel execution, output shown per-job when complete)

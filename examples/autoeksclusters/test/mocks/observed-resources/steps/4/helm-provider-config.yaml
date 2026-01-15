@@ -1,0 +1,14 @@
+apiVersion: kubernetes.m.crossplane.io/v1alpha1
+kind: Object
+metadata:
+  name: test-cluster-helm-provider-config
+  annotations:
+    crossplane.io/composition-resource-name: helm-provider-config
+    gotemplating.fn.crossplane.io/composition-resource-name: helm-provider-config
+status:
+  conditions:
+    - type: Ready
+      status: "True"
+      reason: Available
+    - type: Synced
+      status: "True"

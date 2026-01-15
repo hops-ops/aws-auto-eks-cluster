@@ -29,3 +29,7 @@ status:
       endpointPrivateAccess: true
       endpointPublicAccess: false
       vpcId: vpc-0123456789abcdef0
+      subnetIds:
+        - subnet-0123456789abcdef0
+        - subnet-0123456789abcdef1
+        - subnet-0123456789abcdef2

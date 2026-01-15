@@ -1,0 +1,14 @@
+apiVersion: kubernetes.m.crossplane.io/v1alpha1
+kind: Object
+metadata:
+  name: test-cluster-k8s-provider-config
+  annotations:
+    crossplane.io/composition-resource-name: k8s-provider-config
+    gotemplating.fn.crossplane.io/composition-resource-name: k8s-provider-config
+status:
+  conditions:
+    - type: Ready
+      status: "True"
+      reason: Available
+    - type: Synced
+      status: "True"

@@ -112,6 +112,21 @@ spec:
                     description: Kind of the provider config reference.
                     default: ProviderConfig
 
+              kubernetesProviderConfigRef:
+                type: object
+                description: |
+                  Reference to Kubernetes ProviderConfig for creating cluster-specific ProviderConfigs.
+                  Uses injected identity on the management cluster. Defaults to "default".
+                properties:
+                  name:
+                    type: string
+                    description: Name of the Kubernetes ProviderConfig.
+                    default: default
+                  kind:
+                    type: string
+                    description: Kind of the provider config reference.
+                    default: ProviderConfig
+
               # Optional AWS config
               tags:
                 type: object

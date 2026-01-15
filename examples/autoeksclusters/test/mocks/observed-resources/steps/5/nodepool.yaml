@@ -1,0 +1,14 @@
+apiVersion: kubernetes.m.crossplane.io/v1alpha1
+kind: Object
+metadata:
+  name: test-cluster-general
+  annotations:
+    crossplane.io/composition-resource-name: nodepool
+    gotemplating.fn.crossplane.io/composition-resource-name: nodepool
+status:
+  conditions:
+    - type: Ready
+      status: "True"
+      reason: Available
+    - type: Synced
+      status: "True"

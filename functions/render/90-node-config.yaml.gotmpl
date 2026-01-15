@@ -109,4 +109,78 @@ spec:
     name: {{ $am.cluster.name }}
     kind: ProviderConfig
 {{ end }}
+
+# ==============================================================================
+# Usages: Delete NodeConfig Objects in correct order
+# NodeConfig objects are rendered when this block is rendered ($am.render.nodeConfig)
+# so we create Usages at the same time
+# ==============================================================================
+
+# Delete NodeClass before Kubernetes ProviderConfig Object
+---
+apiVersion: protection.crossplane.io/v1beta1
+kind: Usage
+metadata:
+  name: {{ $am.cluster.name }}-delete-nodeclass-before-k8s-pc
+  labels: {{ $am.labels | toJson }}
+  annotations:
+    {{ setResourceNameAnnotation "delete-nodeclass-before-k8s-pc" }}
+spec:
+  replayDeletion: true
+  of:
+    apiVersion: kubernetes.m.crossplane.io/v1alpha1
+    kind: Object
+    resourceRef:
+      name: {{ $am.cluster.name }}-k8s-provider-config
+  by:
+    apiVersion: kubernetes.m.crossplane.io/v1alpha1
+    kind: Object
+    resourceRef:
+      name: {{ $am.cluster.name }}-{{ $am.nodeConfig.nodeClass.name }}
+
+{{ if $am.nodeConfig.nodePool.enabled }}
+# Delete NodePool before NodeClass (NodePool references NodeClass)
+---
+apiVersion: protection.crossplane.io/v1beta1
+kind: Usage
+metadata:
+  name: {{ $am.cluster.name }}-delete-nodepool-before-nodeclass
+  labels: {{ $am.labels | toJson }}
+  annotations:
+    {{ setResourceNameAnnotation "delete-nodepool-before-nodeclass" }}
+spec:
+  replayDeletion: true
+  of:
+    apiVersion: kubernetes.m.crossplane.io/v1alpha1
+    kind: Object
+    resourceRef:
+      name: {{ $am.cluster.name }}-{{ $am.nodeConfig.nodeClass.name }}
+  by:
+    apiVersion: kubernetes.m.crossplane.io/v1alpha1
+    kind: Object
+    resourceRef:
+      name: {{ $am.cluster.name }}-{{ $am.nodeConfig.nodePool.name }}
+
+# Delete NodePool before Kubernetes ProviderConfig Object
+---
+apiVersion: protection.crossplane.io/v1beta1
+kind: Usage
+metadata:
+  name: {{ $am.cluster.name }}-delete-nodepool-before-k8s-pc
+  labels: {{ $am.labels | toJson }}
+  annotations:
+    {{ setResourceNameAnnotation "delete-nodepool-before-k8s-pc" }}
+spec:
+  replayDeletion: true
+  of:
+    apiVersion: kubernetes.m.crossplane.io/v1alpha1
+    kind: Object
+    resourceRef:
+      name: {{ $am.cluster.name }}-k8s-provider-config
+  by:
+    apiVersion: kubernetes.m.crossplane.io/v1alpha1
+    kind: Object
+    resourceRef:
+      name: {{ $am.cluster.name }}-{{ $am.nodeConfig.nodePool.name }}
+{{ end }}
 {{ end }}
