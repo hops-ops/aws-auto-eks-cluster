@@ -33,12 +33,20 @@
 {{- $clusterStatus := $clusterResource.status | default dict }}
 {{- $clusterAtProvider := $clusterStatus.atProvider | default dict }}
 
-# VPC Config
+# VPC Config (object)
 {{- $clusterVpcConfig := $clusterAtProvider.vpcConfig | default dict }}
 
-# Identity/OIDC
-{{- $clusterIdentity := $clusterAtProvider.identity | default dict }}
-{{- $clusterOidc := $clusterIdentity.oidc | default dict }}
+# Identity/OIDC (identity and oidc are arrays)
+{{- $identityArr := $clusterAtProvider.identity | default list }}
+{{- $clusterIdentity := dict }}
+{{- if gt (len $identityArr) 0 }}
+  {{- $clusterIdentity = index $identityArr 0 }}
+{{- end }}
+{{- $oidcArr := $clusterIdentity.oidc | default list }}
+{{- $clusterOidc := dict }}
+{{- if gt (len $oidcArr) 0 }}
+  {{- $clusterOidc = index $oidcArr 0 }}
+{{- end }}
 
 # Control plane status from conditions
 {{- $clusterConditions := $clusterStatus.conditions | default list }}

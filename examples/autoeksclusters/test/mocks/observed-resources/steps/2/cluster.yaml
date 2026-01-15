@@ -19,8 +19,8 @@ status:
     endpoint: https://ABCDEF1234567890.gr7.us-east-1.eks.amazonaws.com
     id: test-cluster
     identity:
-      oidc:
-        issuer: https://oidc.eks.us-east-1.amazonaws.com/id/ABCDEF1234567890
+      - oidc:
+          - issuer: https://oidc.eks.us-east-1.amazonaws.com/id/ABCDEF1234567890
     platformVersion: eks.1
     status: ACTIVE
     version: "1.31"
