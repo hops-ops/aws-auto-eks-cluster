@@ -52,8 +52,9 @@ _items = [
         metadata.name = "autoekscluster"
         spec = {
             crossplane = {
-                version = "2.0.2-up.5"
-                autoUpgrade.channel = "None"
+                autoUpgrade: {
+                    channel = "Stable"
+                }
             }
             defaultConditions = ["Ready"]
             timeoutSeconds = 5400  # 90 minutes for EKS cluster creation
@@ -94,6 +95,20 @@ _items = [
                                 name = "aws-creds"
                                 key = "creds"
                             }
+                        }
+                    }
+                }
+
+                {
+                    apiVersion = "kubernetes.m.crossplane.io/v1beta1"
+                    kind = "ProviderConfig"
+                    metadata = {
+                        name = "default"
+                        namespace = _namespace
+                    }
+                    spec = {
+                        credentials = {
+                            source = "InjectedIdentity"
                         }
                     }
                 }
