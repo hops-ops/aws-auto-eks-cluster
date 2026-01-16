@@ -116,7 +116,7 @@ spec:
 # so we create Usages at the same time
 # ==============================================================================
 
-# Delete NodeClass before Kubernetes ProviderConfig
+# Delete NodeClass before Kubernetes ProviderConfig Object
 ---
 apiVersion: protection.crossplane.io/v1beta1
 kind: Usage
@@ -129,9 +129,9 @@ spec:
   replayDeletion: true
   of:
     apiVersion: kubernetes.m.crossplane.io/v1alpha1
-    kind: ProviderConfig
+    kind: Object
     resourceRef:
-      name: {{ $am.cluster.name }}
+      name: {{ $am.cluster.name }}-k8s-provider-config
   by:
     apiVersion: kubernetes.m.crossplane.io/v1alpha1
     kind: Object
@@ -161,7 +161,7 @@ spec:
     resourceRef:
       name: {{ $am.cluster.name }}-{{ $am.nodeConfig.nodePool.name }}
 
-# Delete NodePool before Kubernetes ProviderConfig
+# Delete NodePool before Kubernetes ProviderConfig Object
 ---
 apiVersion: protection.crossplane.io/v1beta1
 kind: Usage
@@ -174,9 +174,9 @@ spec:
   replayDeletion: true
   of:
     apiVersion: kubernetes.m.crossplane.io/v1alpha1
-    kind: ProviderConfig
+    kind: Object
     resourceRef:
-      name: {{ $am.cluster.name }}
+      name: {{ $am.cluster.name }}-k8s-provider-config
   by:
     apiVersion: kubernetes.m.crossplane.io/v1alpha1
     kind: Object
