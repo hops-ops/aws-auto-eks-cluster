@@ -54,6 +54,7 @@ _items = [
         metadata.name = "autoekscluster"
         spec = {
             crossplane.autoUpgrade.channel: "Rapid"
+            defaultConditions: ["Ready"]
             timeoutSeconds = 5400  # 90 minutes for EKS cluster creation
             cleanupTimeoutSeconds = 1800  # 30 minutes for cleanup
             skipDelete = False

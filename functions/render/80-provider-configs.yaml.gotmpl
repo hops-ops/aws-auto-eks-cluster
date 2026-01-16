@@ -51,74 +51,49 @@ spec:
 {{ end }}
 
 {{ if $am.render.providerConfigs }}
-# Kubernetes ProviderConfig (wrapped in Object for proper lifecycle)
+# Kubernetes ProviderConfig
 ---
 apiVersion: kubernetes.m.crossplane.io/v1alpha1
-kind: Object
+kind: ProviderConfig
 metadata:
-  name: {{ $am.cluster.name }}-k8s-provider-config
+  name: {{ $am.cluster.name }}
   labels: {{ $am.labels | toJson }}
   annotations:
     {{ setResourceNameAnnotation "k8s-provider-config" }}
+    gotemplating.fn.crossplane.io/ready: "True"
 spec:
-  managementPolicies: {{ $am.managementPolicies | toJson }}
-  forProvider:
-    manifest:
-      apiVersion: kubernetes.m.crossplane.io/v1alpha1
-      kind: ProviderConfig
-      metadata:
-        name: {{ $am.cluster.name }}
-        namespace: {{ $am.namespace }}
-      spec:
-        credentials:
-          secretRef:
-            key: kubeconfig
-            name: {{ $am.cluster.name }}
-            namespace: {{ $am.namespace }}
-          source: Secret
-  providerConfigRef:
-    name: {{ $am.kubernetesProviderConfig.name }}
-    kind: {{ $am.kubernetesProviderConfig.kind }}
-  readiness:                                                       
-    policy: DeriveFromCelQuery                                     
-    celQuery: "has(object.metadata.uid)"  
+  credentials:
+    secretRef:
+      key: kubeconfig
+      name: {{ $am.cluster.name }}
+      namespace: {{ $am.namespace }}
+    source: Secret
 
-# Helm ProviderConfig (wrapped in Object for proper lifecycle)
+# Helm ProviderConfig
 ---
-apiVersion: kubernetes.m.crossplane.io/v1alpha1
-kind: Object
+apiVersion: helm.m.crossplane.io/v1beta1
+kind: ProviderConfig
 metadata:
-  name: {{ $am.cluster.name }}-helm-provider-config
+  name: {{ $am.cluster.name }}
   labels: {{ $am.labels | toJson }}
   annotations:
     {{ setResourceNameAnnotation "helm-provider-config" }}
+    gotemplating.fn.crossplane.io/ready: "True"
 spec:
-  managementPolicies: {{ $am.managementPolicies | toJson }}
-  forProvider:
-    manifest:
-      apiVersion: helm.m.crossplane.io/v1beta1
-      kind: ProviderConfig
-      metadata:
-        name: {{ $am.cluster.name }}
-        namespace: {{ $am.namespace }}
-      spec:
-        credentials:
-          secretRef:
-            key: kubeconfig
-            name: {{ $am.cluster.name }}
-            namespace: {{ $am.namespace }}
-          source: Secret
-  providerConfigRef:
-    name: {{ $am.kubernetesProviderConfig.name }}
-    kind: {{ $am.kubernetesProviderConfig.kind }}
+  credentials:
+    secretRef:
+      key: kubeconfig
+      name: {{ $am.cluster.name }}
+      namespace: {{ $am.namespace }}
+    source: Secret
 
 # ==============================================================================
-# Usages: Delete ProviderConfig Objects before ClusterAuth
+# Usages: Delete ProviderConfigs before ClusterAuth
 # ==============================================================================
 {{ $k8sProviderConfigReady := get $obs._readiness "k8s-provider-config" | default false }}
 {{ $helmProviderConfigReady := get $obs._readiness "helm-provider-config" | default false }}
 
-# Delete Kubernetes ProviderConfig Object before ClusterAuth
+# Delete Kubernetes ProviderConfig before ClusterAuth
 {{ if and $k8sProviderConfigReady $obs.clusterAuth.ready }}
 ---
 apiVersion: protection.crossplane.io/v1beta1
@@ -137,12 +112,12 @@ spec:
       name: {{ $am.cluster.name }}
   by:
     apiVersion: kubernetes.m.crossplane.io/v1alpha1
-    kind: Object
+    kind: ProviderConfig
     resourceRef:
-      name: {{ $am.cluster.name }}-k8s-provider-config
+      name: {{ $am.cluster.name }}
 {{ end }}
 
-# Delete Helm ProviderConfig Object before ClusterAuth
+# Delete Helm ProviderConfig before ClusterAuth
 {{ if and $helmProviderConfigReady $obs.clusterAuth.ready }}
 ---
 apiVersion: protection.crossplane.io/v1beta1
@@ -160,9 +135,9 @@ spec:
     resourceRef:
       name: {{ $am.cluster.name }}
   by:
-    apiVersion: kubernetes.m.crossplane.io/v1alpha1
-    kind: Object
+    apiVersion: helm.m.crossplane.io/v1beta1
+    kind: ProviderConfig
     resourceRef:
-      name: {{ $am.cluster.name }}-helm-provider-config
+      name: {{ $am.cluster.name }}
 {{ end }}
 {{ end }}
