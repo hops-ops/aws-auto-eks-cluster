@@ -79,6 +79,9 @@ spec:
   providerConfigRef:
     name: {{ $am.kubernetesProviderConfig.name }}
     kind: {{ $am.kubernetesProviderConfig.kind }}
+  readiness:                                                       
+    policy: DeriveFromCelQuery                                     
+    celQuery: "has(object.metadata.uid)"  
 
 # Helm ProviderConfig (wrapped in Object for proper lifecycle)
 ---
