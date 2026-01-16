@@ -22,8 +22,10 @@ import base64
 import file
 import datetime
 import math
-import models.io.upbound.dev.meta.v1alpha1 as metav1alpha1
 import models.ai.com.ops.hops.aws.v1alpha1 as awsv1alpha1
+import models.io.upbound.dev.meta.v1alpha1 as metav1alpha1
+import models.io.upbound.dev.meta.v2alpha1 as metav2alpha1
+import models.k8s.apimachinery.pkg.apis.meta.v1 as metav1
 
 # Read AWS credentials from local file (gitignored)
 _creds = file.read("secrets/aws-creds")
@@ -51,23 +53,12 @@ _items = [
     metav1alpha1.E2ETest {
         metadata.name = "autoekscluster"
         spec = {
-            crossplane = {
-                autoUpgrade: {
-                    channel = "Stable"
-                }
-            }
-            defaultConditions = ["Ready"]
+            crossplane.autoUpgrade.channel: "Rapid"
             timeoutSeconds = 5400  # 90 minutes for EKS cluster creation
             cleanupTimeoutSeconds = 1800  # 30 minutes for cleanup
             skipDelete = False
-            # initResources: No additional packages needed
-            # Uses persistent hops-test network - no Network XRD required
-            initResources = []
 
-            # extraResources: Credentials, ProviderConfig, and dependency packages
-            # Applied after package install
             extraResources = [
-                # AWS credentials secret
                 {
                     apiVersion = "v1"
                     kind = "Secret"
@@ -79,7 +70,7 @@ _items = [
                         creds = _base64_creds
                     }
                 }
-                # AWS ProviderConfig using Secret credentials
+
                 {
                     apiVersion = "aws.m.upbound.io/v1beta1"
                     kind = "ProviderConfig"
@@ -100,7 +91,7 @@ _items = [
                 }
 
                 {
-                    apiVersion = "kubernetes.m.crossplane.io/v1beta1"
+                    apiVersion = "kubernetes.m.crossplane.io/v1alpha1"
                     kind = "ProviderConfig"
                     metadata = {
                         name = "default"
