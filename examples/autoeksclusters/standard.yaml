@@ -27,7 +27,7 @@ spec:
 
   # Grant cluster-admin to an IAM role (for AWS Console + kubectl access)
   # This is optional - user accessEntries for full control or additional entries
-  defaultAdminArn: arn:aws:iam::123456789012:role/PlatformAdmin
+  adminRoleArn: arn:aws:iam::123456789012:role/PlatformAdmin
 
   # Additional access entries for fine-grained permissions
   accessEntries:

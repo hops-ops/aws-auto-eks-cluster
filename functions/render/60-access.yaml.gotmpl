@@ -62,7 +62,7 @@ spec:
   managementPolicies: {{ $am.managementPolicies | toJson }}
   forProvider:
     clusterName: {{ $am.cluster.name }}
-    principalArn: {{ $am.defaultAdminArn }}
+    principalArn: {{ $am.adminRoleArn }}
     region: {{ $am.cluster.region }}
     type: STANDARD
     kubernetesGroups:
@@ -86,7 +86,7 @@ spec:
       type: cluster
     clusterName: {{ $am.cluster.name }}
     policyArn: arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy
-    principalArn: {{ $am.defaultAdminArn }}
+    principalArn: {{ $am.adminRoleArn }}
     region: {{ $am.cluster.region }}
   providerConfigRef:
     name: {{ $am.providerConfig.name }}

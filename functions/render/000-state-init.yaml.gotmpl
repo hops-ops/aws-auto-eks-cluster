@@ -76,7 +76,7 @@
   "kms" (dict
     "externalName" ($kms.externalName | default "")
   )
-  "defaultAdminArn" ($spec.defaultAdminArn | default "")
+  "adminRoleArn" ($spec.adminRoleArn | default "")
   "accessEntries" ($spec.accessEntries | default (list))
   "securityGroupRules" (dict
     "enabled" ($sgRules.enabled | default false)
