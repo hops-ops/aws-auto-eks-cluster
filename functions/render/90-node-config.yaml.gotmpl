@@ -27,7 +27,6 @@ spec:
           iops: {{ $am.nodeConfig.nodeClass.ephemeralStorage.iops }}
           size: {{ $am.nodeConfig.nodeClass.ephemeralStorage.size }}
           throughput: {{ $am.nodeConfig.nodeClass.ephemeralStorage.throughput }}
-          volumeType: {{ $am.nodeConfig.nodeClass.ephemeralStorage.volumeType }}
         networkPolicy: DefaultAllow
         networkPolicyEventLogs: Disabled
         role: {{ $obs.nodeRole.name }}

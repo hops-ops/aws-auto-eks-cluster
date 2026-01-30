@@ -94,7 +94,6 @@
         "size" ($ephemeralStorage.size | default "80Gi")
         "iops" ($ephemeralStorage.iops | default 3000)
         "throughput" ($ephemeralStorage.throughput | default 125)
-        "volumeType" ($ephemeralStorage.volumeType | default "gp3")
       )
     )
     "nodePool" (dict

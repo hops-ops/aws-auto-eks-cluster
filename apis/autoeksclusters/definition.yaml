@@ -358,15 +358,6 @@ spec:
                             type: integer
                             description: Throughput in MiB/s for ephemeral storage.
                             default: 125
-                      volumeType:
-                            type: string
-                            description: EBS volume type for ephemeral storage.
-                            enum:
-                            - gp3
-                            - gp2
-                            - io1
-                            - io2
-                            default: gp3
                   nodePool:
                     type: object
                     description: NodePool configuration.
