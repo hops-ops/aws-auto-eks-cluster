@@ -25,14 +25,16 @@ spec:
   publicAccess: false
   encryptionEnabled: true
 
-  # Custom access entries for cluster admins
+  # Grant cluster-admin to an IAM role (for AWS Console + kubectl access)
+  # This is optional - user accessEntries for full control or additional entries
+  defaultAdminArn: arn:aws:iam::123456789012:role/PlatformAdmin
+
+  # Additional access entries for fine-grained permissions
   accessEntries:
-    - principalArn: arn:aws:iam::123456789012:role/PlatformAdmin
+    - principalArn: arn:aws:iam::123456789012:role/ReadOnlyAgent
       type: STANDARD
-      kubernetesGroups:
-        - cluster-admin
       accessPolicies:
-        - policyArn: arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy
+        - policyArn: arn:aws:eks::aws:cluster-access-policy/AmazonEKSViewPolicy
           accessScope:
             type: cluster
 

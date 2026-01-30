@@ -25,6 +25,7 @@
 {{ $renderCluster := and $obs.controlPlaneRole.ready (or (not $eff.encryptionEnabled) $obs.kms.ready) }}
 {{ $renderClusterAuth := $obs.cluster.ready }}
 {{ $renderProviderConfigs := $obs.clusterAuth.ready }}
+{{ $renderDefaultAdmin := and (ne $eff.defaultAdminArn "") $obs.cluster.ready }}
 {{ $renderAccessEntries := $obs.cluster.ready }}
 {{ $renderOidc := and $eff.oidc.enabled $obs.cluster.ready }}
 {{ $renderSecurityGroupRules := and $eff.securityGroupRules.enabled (ne $obs.cluster.securityGroupId "") }}
@@ -67,6 +68,7 @@
   "externalName" $eff.externalName
   "kms" $eff.kms
 
+  "defaultAdminArn" $eff.defaultAdminArn
   "accessEntries" $eff.accessEntries
 
   "securityGroupRules" $eff.securityGroupRules
@@ -79,6 +81,7 @@
   "kubernetesProviderConfig" $eff.kubernetesProviderConfigRef
 
   "render" (dict
+    "defaultAdmin" $renderDefaultAdmin
     "iamRoles" $renderIamRoles
     "iamPolicies" $renderIamPolicies
     "iamAttachments" $renderIamAttachments

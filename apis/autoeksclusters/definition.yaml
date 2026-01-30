@@ -127,6 +127,15 @@ spec:
                     description: Kind of the provider config reference.
                     default: ProviderConfig
 
+              # Default admin access
+              defaultAdminArn:
+                type: string
+                description: |
+                  IAM principal ARN (role or user) to grant cluster-admin access.
+                  Creates an AccessEntry with AmazonEKSClusterAdminPolicy at cluster scope.
+                  This is the simplest way to grant AWS Console and kubectl access.
+                  Example: "arn:aws:iam::123456789012:role/Admin"
+
               # Optional AWS config
               tags:
                 type: object
