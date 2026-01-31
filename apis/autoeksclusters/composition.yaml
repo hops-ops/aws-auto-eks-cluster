@@ -8,9 +8,9 @@ spec:
     kind: AutoEKSCluster
   mode: Pipeline
   pipeline:
-  - functionRef:
-      name: hops-ops-aws-auto-eks-clusterrender
-    step: render
-  - functionRef:
-      name: crossplane-contrib-function-auto-ready
-    step: crossplane-contrib-function-auto-ready
+    - functionRef:
+        name: hops-ops-aws-auto-eks-clusterrender
+      step: render
+    - functionRef:
+        name: crossplane-contrib-function-auto-ready
+      step: crossplane-contrib-function-auto-ready

@@ -114,9 +114,9 @@ spec:
 # Usages: Delete NodeConfig Objects in correct order
 # Gated on readiness to prevent stuck deletions
 # ==============================================================================
-{{ $nodeClassReady := get $obs._readiness "nodeclass" }}
-{{ $nodePoolReady := get $obs._readiness "nodepool" }}
-{{ $k8sProviderConfigReady := get $obs._readiness "k8s-provider-config" }}
+{{ $nodeClassReady := get $obs._readiness "nodeclass" | default false }}
+{{ $nodePoolReady := get $obs._readiness "nodepool" | default false }}
+{{ $k8sProviderConfigReady := get $obs._readiness "k8s-provider-config" | default false }}
 
 {{ if and $nodeClassReady $k8sProviderConfigReady }}
 # Delete NodeClass before Kubernetes ProviderConfig Object
