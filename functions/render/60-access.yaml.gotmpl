@@ -48,6 +48,51 @@ spec:
     name: {{ $am.providerConfig.name }}
     kind: {{ $am.providerConfig.kind }}
 
+# Default admin access entry
+{{ if $am.render.defaultAdmin }}
+---
+apiVersion: eks.aws.m.upbound.io/v1beta1
+kind: AccessEntry
+metadata:
+  name: {{ $am.cluster.name }}-default-admin
+  labels: {{ $am.labels | toJson }}
+  annotations:
+    {{ setResourceNameAnnotation "access-entry-default-admin" }}
+spec:
+  managementPolicies: {{ $am.managementPolicies | toJson }}
+  forProvider:
+    clusterName: {{ $am.cluster.name }}
+    principalArn: {{ $am.adminRoleArn }}
+    region: {{ $am.cluster.region }}
+    type: STANDARD
+    kubernetesGroups:
+    - cluster-admin
+  providerConfigRef:
+    name: {{ $am.providerConfig.name }}
+    kind: {{ $am.providerConfig.kind }}
+
+---
+apiVersion: eks.aws.m.upbound.io/v1beta1
+kind: AccessPolicyAssociation
+metadata:
+  name: {{ $am.cluster.name }}-default-admin-policy
+  labels: {{ $am.labels | toJson }}
+  annotations:
+    {{ setResourceNameAnnotation "access-policy-default-admin" }}
+spec:
+  managementPolicies: {{ $am.managementPolicies | toJson }}
+  forProvider:
+    accessScope:
+      type: cluster
+    clusterName: {{ $am.cluster.name }}
+    policyArn: arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy
+    principalArn: {{ $am.adminRoleArn }}
+    region: {{ $am.cluster.region }}
+  providerConfigRef:
+    name: {{ $am.providerConfig.name }}
+    kind: {{ $am.providerConfig.kind }}
+{{ end }}
+
 # Custom access entries from spec
 {{- range $i, $entry := $am.accessEntries }}
 {{- $entryName := printf "%s-custom-%d" $am.cluster.name $i }}
@@ -177,6 +222,54 @@ spec:
     kind: AccessPolicyAssociation
     resourceRef:
       name: {{ $am.cluster.name }}-node-policy
+{{ end }}
+
+# Delete default admin access entry before Cluster
+{{ if and $clusterReady (get $readiness "access-entry-default-admin") }}
+---
+apiVersion: protection.crossplane.io/v1beta1
+kind: Usage
+metadata:
+  name: {{ $am.cluster.name }}-delete-default-admin-before-cluster
+  labels: {{ $am.labels | toJson }}
+  annotations:
+    {{ setResourceNameAnnotation "delete-default-admin-before-cluster" }}
+spec:
+  replayDeletion: true
+  of:
+    apiVersion: eks.aws.m.upbound.io/v1beta1
+    kind: Cluster
+    resourceRef:
+      name: {{ $am.cluster.name }}
+  by:
+    apiVersion: eks.aws.m.upbound.io/v1beta1
+    kind: AccessEntry
+    resourceRef:
+      name: {{ $am.cluster.name }}-default-admin
+{{ end }}
+
+# Delete default admin access policy before Cluster
+{{ if and $clusterReady (get $readiness "access-policy-default-admin") }}
+---
+apiVersion: protection.crossplane.io/v1beta1
+kind: Usage
+metadata:
+  name: {{ $am.cluster.name }}-delete-default-admin-policy-before-cluster
+  labels: {{ $am.labels | toJson }}
+  annotations:
+    {{ setResourceNameAnnotation "delete-default-admin-policy-before-cluster" }}
+spec:
+  replayDeletion: true
+  of:
+    apiVersion: eks.aws.m.upbound.io/v1beta1
+    kind: Cluster
+    resourceRef:
+      name: {{ $am.cluster.name }}
+  by:
+    apiVersion: eks.aws.m.upbound.io/v1beta1
+    kind: AccessPolicyAssociation
+    resourceRef:
+      name: {{ $am.cluster.name }}-default-admin-policy
 {{ end }}
 
 # Custom access entries - Delete each entry and its policies before Cluster

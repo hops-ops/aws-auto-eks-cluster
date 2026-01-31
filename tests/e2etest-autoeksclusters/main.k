@@ -39,6 +39,7 @@ _test_name = "e2e-autoeks-" + _now
 _namespace = "default"
 _region = "us-east-2"  # Match CI workflow region
 _account_id = "034489662075"  # CI test account
+_admin_role_arn = "arn:aws:iam::034489662075:role/aws-reserved/sso.amazonaws.com/us-east-2/AWSReservedSSO_AdminAccess_e8d960044a7864f6"
 
 # =============================================================================
 # Persistent Network Infrastructure (from aws-network e2e test - hops-test)
@@ -176,10 +177,11 @@ _items = [
                         namespace = _namespace
                     }
                     spec = {
+                        adminRoleArn = _admin_role_arn
                         clusterName = _test_name
                         region = _region
                         accountId = _account_id
-                        version = "1.34"
+                        version = "1.35"
                         # Use subnet IDs from persistent hops-test network
                         subnetIds = _private_subnet_ids
                         providerConfigRef = {
