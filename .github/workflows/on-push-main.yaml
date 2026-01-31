@@ -4,14 +4,14 @@ on:
   push:
     branches: [main]
     paths:
-      - '.github/workflows/on-push-main.yaml'
-      - '.github/workflows/on-version-tagged.yaml'
-      - '.gitops/**'
-      - 'apis/**'
-      - 'examples/**'
-      - 'functions/**'
-      - 'tests/**'
-      - 'upbound.yaml'
+      - ".github/workflows/on-push-main.yaml"
+      - ".github/workflows/on-version-tagged.yaml"
+      - ".gitops/**"
+      - "apis/**"
+      - "examples/**"
+      - "functions/**"
+      - "tests/**"
+      - "upbound.yaml"
 
 permissions:
   packages: write
@@ -21,11 +21,11 @@ permissions:
   id-token: write
 
 jobs:
-
   setup:
     uses: unbounded-tech/workflows-crossplane/.github/workflows/setup.yaml@v2.13.0
 
   validate:
+    needs: setup
     uses: unbounded-tech/workflows-crossplane/.github/workflows/validate.yaml@v2.13.0
     with:
       examples: |
@@ -37,6 +37,8 @@ jobs:
           { "example": "examples/autoeksclusters/test/example.yaml", "observed_resources": "examples/autoeksclusters/test/mocks/observed-resources/steps/1" },
           { "example": "examples/autoeksclusters/test/example.yaml", "observed_resources": "examples/autoeksclusters/test/mocks/observed-resources/steps/2" },
           { "example": "examples/autoeksclusters/test/example.yaml", "observed_resources": "examples/autoeksclusters/test/mocks/observed-resources/steps/3" },
+          { "example": "examples/autoeksclusters/test/example.yaml", "observed_resources": "examples/autoeksclusters/test/mocks/observed-resources/steps/4" },
+          { "example": "examples/autoeksclusters/test/example.yaml", "observed_resources": "examples/autoeksclusters/test/mocks/observed-resources/steps/5" },
           { "example": "examples/autoeksclusters/with-network/test/example.yaml", "observed_resources": "examples/autoeksclusters/with-network/test/mocks/observed-resources/steps/1" }
         ]
       api_path: apis/autoeksclusters
@@ -59,7 +61,7 @@ jobs:
 
   version-and-tag:
     name: Version and Tag
-    needs: 
+    needs:
       - validate
       - test
       - e2e

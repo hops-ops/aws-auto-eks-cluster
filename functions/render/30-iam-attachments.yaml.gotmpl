@@ -3,7 +3,7 @@
 
 {{ $am := $state.automode }}
 {{ $obs := $state.observed }}
-{{ $readiness := $obs.readiness }}
+{{ $readiness := $obs._readiness }}
 
 {{ if $am.render.iamAttachments }}
 # Control plane policy attachments

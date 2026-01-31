@@ -4,13 +4,13 @@ on:
   pull_request:
     types: [labeled, opened, reopened, synchronize]
     paths:
-      - '.github/workflows/on-pr.yaml'
-      - '.gitops/**'
-      - 'apis/**'
-      - 'examples/**'
-      - 'tests/**'
-      - 'functions/**'
-      - 'upbound.yaml'
+      - ".github/workflows/on-pr.yaml"
+      - ".gitops/**"
+      - "apis/**"
+      - "examples/**"
+      - "tests/**"
+      - "functions/**"
+      - "upbound.yaml"
 
 permissions:
   packages: write
@@ -20,7 +20,6 @@ permissions:
   id-token: write
 
 jobs:
-
   setup:
     uses: unbounded-tech/workflows-crossplane/.github/workflows/setup.yaml@v2.13.0
 
@@ -37,6 +36,8 @@ jobs:
           { "example": "examples/autoeksclusters/test/example.yaml", "observed_resources": "examples/autoeksclusters/test/mocks/observed-resources/steps/1" },
           { "example": "examples/autoeksclusters/test/example.yaml", "observed_resources": "examples/autoeksclusters/test/mocks/observed-resources/steps/2" },
           { "example": "examples/autoeksclusters/test/example.yaml", "observed_resources": "examples/autoeksclusters/test/mocks/observed-resources/steps/3" },
+          { "example": "examples/autoeksclusters/test/example.yaml", "observed_resources": "examples/autoeksclusters/test/mocks/observed-resources/steps/4" },
+          { "example": "examples/autoeksclusters/test/example.yaml", "observed_resources": "examples/autoeksclusters/test/mocks/observed-resources/steps/5" },
           { "example": "examples/autoeksclusters/with-network/test/example.yaml", "observed_resources": "examples/autoeksclusters/with-network/test/mocks/observed-resources/steps/1" }
         ]
       api_path: apis/autoeksclusters
@@ -58,7 +59,7 @@ jobs:
       cleanup-timeout-minutes: 90
 
   publish:
-    needs: 
+    needs:
       - validate
       - test
     uses: unbounded-tech/workflows-crossplane/.github/workflows/publish.yaml@v2.13.0

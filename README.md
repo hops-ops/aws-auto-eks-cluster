@@ -242,12 +242,17 @@ spec:
     - LateInitialize
 
   # External names of existing AWS resources to import
-  imports:
-    cluster: my-existing-cluster
-    controlPlaneRole: my-existing-cluster-controlplane
-    nodeRole: my-existing-cluster-node
-    kmsKey: 12345678-1234-1234-1234-123456789012
-    # oidcProvider: arn:aws:iam::123456789012:oidc-provider/...
+  externalName: my-existing-cluster
+  iam:
+    controlPlaneRole:
+      externalName: my-existing-cluster-controlplane
+    nodeRole:
+      externalName: my-existing-cluster-node
+  kms:
+    externalName: 12345678-1234-1234-1234-123456789012
+  # oidc:
+  #   enabled: true
+  #   externalName: arn:aws:iam::123456789012:oidc-provider/...
 
   # Disable node config initially during import
   nodeConfig:
@@ -283,7 +288,6 @@ spec:
 
 | Field | Description |
 |-------|-------------|
-| `clusterName` | Name of the EKS cluster |
 | `clusterEndpoint` | API server endpoint URL |
 | `clusterSecurityGroupId` | Cluster security group ID |
 | `oidc` | OIDC provider URL (without https://) |
@@ -321,16 +325,22 @@ spec:
 | `region` | Yes | - | AWS region |
 | `accountId` | Yes | - | AWS account ID |
 | `version` | Yes | - | Kubernetes version (e.g., "1.31") |
-| `subnetIds` | Yes | - | Subnet IDs for cluster |
+| `subnetIds` | Cond. | - | Subnet IDs for cluster. Use this OR `subnetSelector`. |
+| `subnetSelector.matchLabels` | Cond. | - | Label selector to find subnets dynamically |
+| `subnetSelector.matchControllerRef` | No | `false` | Match subnets with same controller reference |
 | `providerConfigRef.name` | No | `default` | AWS ProviderConfig name |
 | `providerConfigRef.kind` | No | `ProviderConfig` | Provider config kind |
+| `kubernetesProviderConfigRef.name` | No | `default` | Kubernetes ProviderConfig for cluster-specific configs |
+| `kubernetesProviderConfigRef.kind` | No | `ProviderConfig` | Kind of the Kubernetes provider config |
 | `managementPolicies` | No | `["*"]` | Crossplane management policies |
-| `imports.cluster` | No | - | External name of existing EKS cluster to import |
-| `imports.controlPlaneRole` | No | - | External name of existing control plane IAM role |
-| `imports.nodeRole` | No | - | External name of existing node IAM role |
-| `imports.kmsKey` | No | - | External name of existing KMS key for encryption |
-| `imports.oidcProvider` | No | - | External name (ARN) of existing OIDC provider |
-| `tags` | No | `{hops: "true"}` | Additional AWS tags |
+| `adminRoleArn` | No | - | IAM role ARN to grant cluster-admin access |
+| `externalName` | No | - | Existing EKS cluster name to import |
+| `iam.controlPlaneRole.externalName` | No | - | Existing control plane IAM role name to import |
+| `iam.nodeRole.externalName` | No | - | Existing node IAM role name to import |
+| `kms.externalName` | No | - | Existing KMS key ID to import (not ARN) |
+| `oidc.externalName` | No | - | Existing OIDC provider ARN to import |
+| `tags` | No | `{hops.ops.com.ai/managed: "true"}` | Additional AWS tags merged with defaults |
+| `labels` | No | `{hops.ops.com.ai/managed: "true"}` | Additional Kubernetes labels merged with defaults |
 | `permissionsBoundary` | No | - | IAM permissions boundary ARN |
 | `privateAccess` | No | `true` | Enable private API endpoint |
 | `publicAccess` | No | `false` | Enable public API endpoint |
@@ -340,7 +350,16 @@ spec:
 | `oidc.enabled` | No | `false` | Create OIDC provider for IRSA |
 | `nodeConfig.enabled` | No | `true` | Create NodeClass/NodePool |
 | `nodeConfig.nodeClass.name` | No | `hops-default` | NodeClass name |
+| `nodeConfig.nodeClass.ephemeralStorage.size` | No | `80Gi` | Ephemeral storage size |
+| `nodeConfig.nodeClass.ephemeralStorage.iops` | No | `3000` | Ephemeral storage IOPS |
+| `nodeConfig.nodeClass.ephemeralStorage.throughput` | No | `125` | Ephemeral storage throughput (MiB/s) |
+| `nodeConfig.nodePool.enabled` | No | `true` | Create the NodePool |
+| `nodeConfig.nodePool.name` | No | `hops-spot` | NodePool name |
 | `nodeConfig.nodePool.requirements` | No | spot, c/m/r, gen4+, amd64 | Karpenter node requirements |
+| `nodeConfig.nodePool.expireAfter` | No | `336h` | Duration after which nodes expire |
+| `nodeConfig.nodePool.disruption.consolidationPolicy` | No | `WhenEmptyOrUnderutilized` | Consolidation policy |
+| `nodeConfig.nodePool.disruption.consolidateAfter` | No | `30s` | Time before consolidating |
+| `nodeConfig.nodePool.disruption.budgets` | No | `[{nodes: "10%"}]` | Disruption budgets |
 
 ## Development
 

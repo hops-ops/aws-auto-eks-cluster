@@ -12,7 +12,6 @@
 # Compute Status Values
 # ==============================================================================
 {{ $status := dict
-  "clusterName" $am.cluster.name
   "clusterEndpoint" ($obs.cluster.endpoint | default "Pending")
   "clusterSecurityGroupId" ($obs.cluster.securityGroupId | default "Pending")
   "oidc" ($obs.cluster.oidc | default "Pending")

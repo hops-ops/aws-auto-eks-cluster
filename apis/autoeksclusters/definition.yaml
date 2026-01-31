@@ -9,430 +9,427 @@ spec:
     kind: AutoEKSCluster
     plural: autoeksclusters
   versions:
-  - name: v1alpha1
-    referenceable: true
-    served: true
-    schema:
-      openAPIV3Schema:
-        type: object
-        description: |
-          AutoEKSCluster creates an AWS EKS cluster with Auto Mode enabled.
-          Includes IAM roles, KMS encryption, and optional Karpenter node configuration.
-        required:
-        - spec
-        properties:
-          spec:
-            type: object
-            description: Desired state for the AutoEKSCluster.
-            required:
-            - clusterName
-            - region
-            - accountId
-            - version
-            properties:
-              managementPolicies:
-                type: array
-                description: Management operations permitted on composed resources.
-                items:
+    - name: v1alpha1
+      referenceable: true
+      served: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          description: |
+            AutoEKSCluster creates an AWS EKS cluster with Auto Mode enabled.
+            Includes IAM roles, KMS encryption, and optional Karpenter node configuration.
+          required:
+            - spec
+          properties:
+            spec:
+              type: object
+              description: Desired state for the AutoEKSCluster.
+              required:
+                - clusterName
+                - region
+                - accountId
+                - version
+              properties:
+                managementPolicies:
+                  type: array
+                  description: Management operations permitted on composed resources.
+                  items:
+                    type: string
+                    enum:
+                      - "*"
+                      - Create
+                      - Observe
+                      - Update
+                      - Delete
+                      - LateInitialize
+                  default:
+                    - "*"
+
+                # Import existing cluster (similar to Terraform import)
+                externalName:
                   type: string
-                  enum:
-                  - "*"
-                  - Create
-                  - Observe
-                  - Update
-                  - Delete
-                  - LateInitialize
-                default:
-                - "*"
+                  description: |
+                    External name of existing EKS cluster to import.
+                    Use with managementPolicies excluding "Delete" to adopt without risk of deletion.
+                    Example: "my-existing-cluster"
 
-              # Import existing cluster (similar to Terraform import)
-              externalName:
-                type: string
-                description: |
-                  External name of existing EKS cluster to import.
-                  Use with managementPolicies excluding "Delete" to adopt without risk of deletion.
-                  Example: "my-existing-cluster"
-
-              # Required fields
-              clusterName:
-                type: string
-                description: |
-                  Name of the EKS cluster. Used for resource naming throughout.
-                  Must be unique within the AWS account and region.
-
-              region:
-                type: string
-                description: AWS region for all managed resources.
-
-              accountId:
-                type: string
-                description: AWS account ID (12-digit number as string).
-
-              version:
-                type: string
-                description: |
-                  Kubernetes version for the cluster (e.g., "1.31").
-                  Must be a version supported by EKS.
-
-              subnetIds:
-                type: array
-                description: |
-                  Explicit subnet IDs where the cluster control plane ENIs will be placed.
-                  Use this OR subnetSelector, not both.
-                  Should be private subnets across multiple AZs for high availability.
-                items:
+                # Required fields
+                clusterName:
                   type: string
+                  description: |
+                    Name of the EKS cluster. Used for resource naming throughout.
+                    Must be unique within the AWS account and region.
 
-              subnetSelector:
-                type: object
-                description: |
-                  Label selector to find subnets for cluster control plane ENIs.
-                  Use this OR subnetIds, not both. Recommended when using aws-network.
-                  Example: matchLabels: {"hops.ops.com.ai/network": "my-network", "hops.ops.com.ai/tier": "private"}
-                properties:
-                  matchLabels:
-                    type: object
-                    description: Labels to match subnets.
-                    x-kubernetes-preserve-unknown-fields: true
-                  matchControllerRef:
-                    type: boolean
-                    description: Match subnets in the same namespace with the same controller reference.
-                    default: false
-
-              # Provider Configuration
-              providerConfigRef:
-                type: object
-                description: Reference to AWS ProviderConfig.
-                properties:
-                  name:
-                    type: string
-                    description: Name of the ProviderConfig. Defaults to "default".
-                  kind:
-                    type: string
-                    description: Kind of the provider config reference.
-                    default: ProviderConfig
-
-              kubernetesProviderConfigRef:
-                type: object
-                description: |
-                  Reference to Kubernetes ProviderConfig for creating cluster-specific ProviderConfigs.
-                  Uses injected identity on the management cluster. Defaults to "default".
-                properties:
-                  name:
-                    type: string
-                    description: Name of the Kubernetes ProviderConfig.
-                    default: default
-                  kind:
-                    type: string
-                    description: Kind of the provider config reference.
-                    default: ProviderConfig
-
-              # Admin access
-              adminRoleArn:
-                type: string
-                description: |
-                  IAM role ARN to grant cluster-admin access.
-                  Creates an AccessEntry with AmazonEKSClusterAdminPolicy at cluster scope.
-                  This is the simplest way to grant AWS Console and kubectl access.
-                  Supports SSO roles (e.g., AWSReservedSSO_AdminAccess_<hash>).
-                  Example: "arn:aws:iam::123456789012:role/Admin"
-
-              # Optional AWS config
-              tags:
-                type: object
-                description: Custom tags applied to all AWS resources. Merged with default tags (hops.ops.com.ai/managed, hops.ops.com.ai/<kind>).
-                additionalProperties:
+                region:
                   type: string
-                x-kubernetes-preserve-unknown-fields: true
+                  description: AWS region for all managed resources.
 
-              labels:
-                type: object
-                description: Custom labels applied to all Kubernetes resources. Merged with default labels (hops.ops.com.ai/managed, hops.ops.com.ai/<kind>).
-                additionalProperties:
+                accountId:
                   type: string
-                x-kubernetes-preserve-unknown-fields: true
+                  description: AWS account ID (12-digit number as string).
 
-              permissionsBoundary:
-                type: string
-                description: |
-                  Optional ARN of IAM permissions boundary to attach to created roles.
-                  Leave empty if not using permissions boundaries.
+                version:
+                  type: string
+                  description: |
+                    Kubernetes version for the cluster (e.g., "1.31").
+                    Must be a version supported by EKS.
 
-              # Cluster endpoint access
-              privateAccess:
-                type: boolean
-                description: Enable private API endpoint access.
-                default: true
-
-              publicAccess:
-                type: boolean
-                description: Enable public API endpoint access.
-                default: false
-
-              # Encryption
-              encryptionEnabled:
-                type: boolean
-                description: Enable KMS encryption for Kubernetes secrets.
-                default: true
-
-              # KMS Key configuration
-              kms:
-                type: object
-                description: KMS encryption key configuration for Kubernetes secrets.
-                properties:
-                  externalName:
+                subnetIds:
+                  type: array
+                  description: |
+                    Explicit subnet IDs where the cluster control plane ENIs will be placed.
+                    Use this OR subnetSelector, not both.
+                    Should be private subnets across multiple AZs for high availability.
+                  items:
                     type: string
-                    description: |
-                      Existing KMS key ID to import (not ARN).
-                      Use with managementPolicies excluding "Delete" to adopt without risk of deletion.
-                      Example: "12345678-1234-1234-1234-123456789012"
 
-              # IAM Role configuration
-              iam:
-                type: object
-                description: IAM role configuration for the cluster.
-                properties:
-                  controlPlaneRole:
-                    type: object
-                    description: Control plane IAM role configuration.
-                    properties:
-                      externalName:
-                        type: string
-                        description: |
-                          Existing IAM role name for the control plane to import (not ARN).
-                          Use with managementPolicies excluding "Delete" to adopt without risk of deletion.
-                          Example: "my-cluster-controlplane"
-                  nodeRole:
-                    type: object
-                    description: Node IAM role configuration.
-                    properties:
-                      externalName:
-                        type: string
-                        description: |
-                          Existing IAM role name for node groups to import (not ARN).
-                          Use with managementPolicies excluding "Delete" to adopt without risk of deletion.
-                          Example: "my-cluster-node"
-
-              # Access Entries - optional list of custom admin access
-              accessEntries:
-                type: array
-                description: |
-                  Optional list of custom access entries for cluster admins.
-                  The node role access entry is always created automatically.
-                items:
+                subnetSelector:
                   type: object
-                  required:
-                  - principalArn
+                  description: |
+                    Label selector to find subnets for cluster control plane ENIs.
+                    Use this OR subnetIds, not both. Recommended when using aws-network.
+                    Example: matchLabels: {"hops.ops.com.ai/network": "my-network", "hops.ops.com.ai/tier": "private"}
                   properties:
-                    principalArn:
+                    matchLabels:
+                      type: object
+                      description: Labels to match subnets.
+                      x-kubernetes-preserve-unknown-fields: true
+                    matchControllerRef:
+                      type: boolean
+                      description: Match subnets in the same namespace with the same controller reference.
+                      default: false
+
+                # Provider Configuration
+                providerConfigRef:
+                  type: object
+                  description: Reference to AWS ProviderConfig.
+                  properties:
+                    name:
                       type: string
-                      description: IAM principal ARN (role or user).
-                    type:
+                      description: Name of the ProviderConfig. Defaults to "default".
+                    kind:
                       type: string
-                      description: Access entry type.
-                      enum:
-                      - STANDARD
-                      - EC2
-                      default: STANDARD
-                    kubernetesGroups:
-                      type: array
-                      description: Kubernetes groups for RBAC.
-                      items:
+                      description: Kind of the provider config reference.
+                      default: ProviderConfig
+
+                kubernetesProviderConfigRef:
+                  type: object
+                  description: |
+                    Reference to Kubernetes ProviderConfig for creating cluster-specific ProviderConfigs.
+                    Uses injected identity on the management cluster. Defaults to "default".
+                  properties:
+                    name:
+                      type: string
+                      description: Name of the Kubernetes ProviderConfig.
+                      default: default
+                    kind:
+                      type: string
+                      description: Kind of the provider config reference.
+                      default: ProviderConfig
+
+                # Admin access
+                adminRoleArn:
+                  type: string
+                  description: |
+                    IAM role ARN to grant cluster-admin access.
+                    Creates an AccessEntry with AmazonEKSClusterAdminPolicy at cluster scope.
+                    This is the simplest way to grant AWS Console and kubectl access.
+                    Supports SSO roles (e.g., AWSReservedSSO_AdminAccess_<hash>).
+                    Example: "arn:aws:iam::123456789012:role/Admin"
+
+                # Optional AWS config
+                tags:
+                  type: object
+                  description: Custom tags applied to all AWS resources. Merged with default tags (hops.ops.com.ai/managed, hops.ops.com.ai/<kind>).
+                  additionalProperties:
+                    type: string
+                  x-kubernetes-preserve-unknown-fields: true
+
+                labels:
+                  type: object
+                  description: Custom labels applied to all Kubernetes resources. Merged with default labels (hops.ops.com.ai/managed, hops.ops.com.ai/<kind>).
+                  additionalProperties:
+                    type: string
+                  x-kubernetes-preserve-unknown-fields: true
+
+                permissionsBoundary:
+                  type: string
+                  description: |
+                    Optional ARN of IAM permissions boundary to attach to created roles.
+                    Leave empty if not using permissions boundaries.
+
+                # Cluster endpoint access
+                privateAccess:
+                  type: boolean
+                  description: Enable private API endpoint access.
+                  default: true
+
+                publicAccess:
+                  type: boolean
+                  description: Enable public API endpoint access.
+                  default: false
+
+                # Encryption
+                encryptionEnabled:
+                  type: boolean
+                  description: Enable KMS encryption for Kubernetes secrets.
+                  default: true
+
+                # KMS Key configuration
+                kms:
+                  type: object
+                  description: KMS encryption key configuration for Kubernetes secrets.
+                  properties:
+                    externalName:
+                      type: string
+                      description: |
+                        Existing KMS key ID to import (not ARN).
+                        Use with managementPolicies excluding "Delete" to adopt without risk of deletion.
+                        Example: "12345678-1234-1234-1234-123456789012"
+
+                # IAM Role configuration
+                iam:
+                  type: object
+                  description: IAM role configuration for the cluster.
+                  properties:
+                    controlPlaneRole:
+                      type: object
+                      description: Control plane IAM role configuration.
+                      properties:
+                        externalName:
+                          type: string
+                          description: |
+                            Existing IAM role name for the control plane to import (not ARN).
+                            Use with managementPolicies excluding "Delete" to adopt without risk of deletion.
+                            Example: "my-cluster-controlplane"
+                    nodeRole:
+                      type: object
+                      description: Node IAM role configuration.
+                      properties:
+                        externalName:
+                          type: string
+                          description: |
+                            Existing IAM role name for node groups to import (not ARN).
+                            Use with managementPolicies excluding "Delete" to adopt without risk of deletion.
+                            Example: "my-cluster-node"
+
+                # Access Entries - optional list of custom admin access
+                accessEntries:
+                  type: array
+                  description: |
+                    Optional list of custom access entries for cluster admins.
+                    The node role access entry is always created automatically.
+                  items:
+                    type: object
+                    required:
+                      - principalArn
+                    properties:
+                      principalArn:
                         type: string
-                    accessPolicies:
+                        description: IAM principal ARN (role or user).
+                      type:
+                        type: string
+                        description: Access entry type.
+                        enum:
+                          - STANDARD
+                          - EC2
+                        default: STANDARD
+                      kubernetesGroups:
+                        type: array
+                        description: Kubernetes groups for RBAC.
+                        items:
+                          type: string
+                      accessPolicies:
+                        type: array
+                        description: EKS access policies to attach.
+                        items:
+                          type: object
+                          required:
+                            - policyArn
+                          properties:
+                            policyArn:
+                              type: string
+                              description: ARN of the EKS access policy.
+                            accessScope:
+                              type: object
+                              properties:
+                                type:
+                                  type: string
+                                  enum:
+                                    - cluster
+                                    - namespace
+                                  default: cluster
+                                namespaces:
+                                  type: array
+                                  description: Namespaces for namespace-scoped access.
+                                  items:
+                                    type: string
+
+                # Security Group Rules
+                securityGroupRules:
+                  type: object
+                  description: Optional custom security group ingress rules.
+                  properties:
+                    enabled:
+                      type: boolean
+                      description: Enable custom security group rules.
+                      default: false
+                    ingress:
                       type: array
-                      description: EKS access policies to attach.
+                      description: List of ingress rules to add to cluster security group.
                       items:
                         type: object
                         required:
-                        - policyArn
+                          - description
+                          - ipProtocol
                         properties:
-                          policyArn:
+                          description:
                             type: string
-                            description: ARN of the EKS access policy.
-                          accessScope:
-                            type: object
-                            properties:
-                              type:
-                                type: string
-                                enum:
-                                - cluster
-                                - namespace
-                                default: cluster
-                              namespaces:
-                                type: array
-                                description: Namespaces for namespace-scoped access.
-                                items:
-                                  type: string
+                            description: Description for the rule.
+                          cidrIpv4:
+                            type: string
+                            description: IPv4 CIDR block (e.g., "10.0.0.0/8").
+                          cidrIpv6:
+                            type: string
+                            description: IPv6 CIDR block.
+                          referencedSecurityGroupId:
+                            type: string
+                            description: Source security group ID.
+                          fromPort:
+                            type: integer
+                            description: Start of port range (use -1 for all).
+                          toPort:
+                            type: integer
+                            description: End of port range (use -1 for all).
+                          ipProtocol:
+                            type: string
+                            description: IP protocol (tcp, udp, icmp, or -1 for all).
 
-              # Security Group Rules
-              securityGroupRules:
-                type: object
-                description: Optional custom security group ingress rules.
-                properties:
-                  enabled:
-                    type: boolean
-                    description: Enable custom security group rules.
-                    default: false
-                  ingress:
-                    type: array
-                    description: List of ingress rules to add to cluster security group.
-                    items:
+                # OIDC Provider (for IRSA)
+                oidc:
+                  type: object
+                  description: |
+                    OIDC provider configuration for IRSA.
+                    Disabled by default; Pod Identity is preferred.
+                  properties:
+                    enabled:
+                      type: boolean
+                      description: Create OIDC provider for IRSA support.
+                      default: false
+                    externalName:
+                      type: string
+                      description: |
+                        Existing OIDC provider ARN to import.
+                        Use with managementPolicies excluding "Delete" to adopt without risk of deletion.
+                        Example: "arn:aws:iam::123456789012:oidc-provider/oidc.eks.us-east-1.amazonaws.com/id/EXAMPLE"
+
+                # Node Configuration
+                nodeConfig:
+                  type: object
+                  description: |
+                    Karpenter NodeClass and NodePool configuration.
+                    Enabled by default with sensible spot instance defaults.
+                  properties:
+                    enabled:
+                      type: boolean
+                      description: Create default NodeClass and NodePool.
+                      default: true
+                    nodeClass:
                       type: object
-                      required:
-                      - description
-                      - ipProtocol
+                      description: NodeClass configuration.
                       properties:
-                        description:
+                        name:
                           type: string
-                          description: Description for the rule.
-                        cidrIpv4:
-                          type: string
-                          description: IPv4 CIDR block (e.g., "10.0.0.0/8").
-                        cidrIpv6:
-                          type: string
-                          description: IPv6 CIDR block.
-                        referencedSecurityGroupId:
-                          type: string
-                          description: Source security group ID.
-                        fromPort:
-                          type: integer
-                          description: Start of port range (use -1 for all).
-                        toPort:
-                          type: integer
-                          description: End of port range (use -1 for all).
-                        ipProtocol:
-                          type: string
-                          description: IP protocol (tcp, udp, icmp, or -1 for all).
-
-              # OIDC Provider (for IRSA)
-              oidc:
-                type: object
-                description: |
-                  OIDC provider configuration for IRSA.
-                  Disabled by default; Pod Identity is preferred.
-                properties:
-                  enabled:
-                    type: boolean
-                    description: Create OIDC provider for IRSA support.
-                    default: false
-                  externalName:
-                    type: string
-                    description: |
-                      Existing OIDC provider ARN to import.
-                      Use with managementPolicies excluding "Delete" to adopt without risk of deletion.
-                      Example: "arn:aws:iam::123456789012:oidc-provider/oidc.eks.us-east-1.amazonaws.com/id/EXAMPLE"
-
-              # Node Configuration
-              nodeConfig:
-                type: object
-                description: |
-                  Karpenter NodeClass and NodePool configuration.
-                  Enabled by default with sensible spot instance defaults.
-                properties:
-                  enabled:
-                    type: boolean
-                    description: Create default NodeClass and NodePool.
-                    default: true
-                  nodeClass:
-                    type: object
-                    description: NodeClass configuration.
-                    properties:
-                      name:
-                        type: string
-                        description: Name of the NodeClass.
-                        default: hops-default
-                      ephemeralStorage:
-                        type: object
-                        description: Ephemeral storage configuration.
-                        properties:
-                          size:
-                            type: string
-                            description: Size of ephemeral storage (e.g., "80Gi").
-                            default: "80Gi"
-                          iops:
-                            type: integer
-                            description: IOPS for ephemeral storage.
-                            default: 3000
-                          throughput:
-                            type: integer
-                            description: Throughput in MiB/s for ephemeral storage.
-                            default: 125
-                  nodePool:
-                    type: object
-                    description: NodePool configuration.
-                    properties:
-                      enabled:
-                        type: boolean
-                        description: Create the NodePool.
-                        default: true
-                      name:
-                        type: string
-                        description: Name of the NodePool.
-                        default: hops-spot
-                      requirements:
-                        type: array
-                        description: |
-                          Custom Karpenter requirements for node selection.
-                          If not specified, defaults to spot instances, c/m/r categories, gen 4+, amd64, linux.
-                        items:
+                          description: Name of the NodeClass.
+                          default: hops-default
+                        ephemeralStorage:
                           type: object
-                          x-kubernetes-preserve-unknown-fields: true
-                      expireAfter:
-                        type: string
-                        description: Duration after which nodes expire (e.g., "336h").
-                        default: "336h"
-                      disruption:
-                        type: object
-                        description: Disruption settings for the NodePool.
-                        properties:
-                          consolidateAfter:
-                            type: string
-                            description: Time to wait before consolidating.
-                            default: "30s"
-                          consolidationPolicy:
-                            type: string
-                            description: Consolidation policy.
-                            enum:
-                            - WhenEmpty
-                            - WhenEmptyOrUnderutilized
-                            default: WhenEmptyOrUnderutilized
-                          budgets:
-                            type: array
-                            description: Disruption budgets.
-                            items:
-                              type: object
-                              properties:
-                                nodes:
-                                  type: string
-                                  description: Max nodes or percentage to disrupt.
-                                  default: "10%"
+                          description: Ephemeral storage configuration.
+                          properties:
+                            size:
+                              type: string
+                              description: Size of ephemeral storage (e.g., "80Gi").
+                              default: "80Gi"
+                            iops:
+                              type: integer
+                              description: IOPS for ephemeral storage.
+                              default: 3000
+                            throughput:
+                              type: integer
+                              description: Throughput in MiB/s for ephemeral storage.
+                              default: 125
+                    nodePool:
+                      type: object
+                      description: NodePool configuration.
+                      properties:
+                        enabled:
+                          type: boolean
+                          description: Create the NodePool.
+                          default: true
+                        name:
+                          type: string
+                          description: Name of the NodePool.
+                          default: hops-spot
+                        requirements:
+                          type: array
+                          description: |
+                            Custom Karpenter requirements for node selection.
+                            If not specified, defaults to spot instances, c/m/r categories, gen 4+, amd64, linux.
+                          items:
+                            type: object
+                            x-kubernetes-preserve-unknown-fields: true
+                        expireAfter:
+                          type: string
+                          description: Duration after which nodes expire (e.g., "336h").
+                          default: "336h"
+                        disruption:
+                          type: object
+                          description: Disruption settings for the NodePool.
+                          properties:
+                            consolidateAfter:
+                              type: string
+                              description: Time to wait before consolidating.
+                              default: "30s"
+                            consolidationPolicy:
+                              type: string
+                              description: Consolidation policy.
+                              enum:
+                                - WhenEmpty
+                                - WhenEmptyOrUnderutilized
+                              default: WhenEmptyOrUnderutilized
+                            budgets:
+                              type: array
+                              description: Disruption budgets.
+                              items:
+                                type: object
+                                properties:
+                                  nodes:
+                                    type: string
+                                    description: Max nodes or percentage to disrupt.
+                                    default: "10%"
 
-          status:
-            type: object
-            description: Observed state of the AutoEKSCluster.
-            properties:
-              clusterName:
-                type: string
-                description: Name of the EKS cluster.
-              clusterEndpoint:
-                type: string
-                description: API server endpoint URL.
-              clusterSecurityGroupId:
-                type: string
-                description: Cluster security group ID.
-              oidc:
-                type: string
-                description: OIDC provider URL (without https://).
-              controlPlaneStatus:
-                type: string
-                description: Status of the control plane (e.g., "Available").
-              encryptionKeyArn:
-                type: string
-                description: ARN of the KMS encryption key.
-              nodeRoleArn:
-                type: string
-                description: ARN of the node IAM role.
-              controlPlaneRoleArn:
-                type: string
-                description: ARN of the control plane IAM role.
+            status:
+              type: object
+              description: Observed state of the AutoEKSCluster.
+              properties:
+                clusterEndpoint:
+                  type: string
+                  description: API server endpoint URL.
+                clusterSecurityGroupId:
+                  type: string
+                  description: Cluster security group ID.
+                oidc:
+                  type: string
+                  description: OIDC provider URL (without https://).
+                controlPlaneStatus:
+                  type: string
+                  description: Status of the control plane (e.g., "Available").
+                encryptionKeyArn:
+                  type: string
+                  description: ARN of the KMS encryption key.
+                nodeRoleArn:
+                  type: string
+                  description: ARN of the node IAM role.
+                controlPlaneRoleArn:
+                  type: string
+                  description: ARN of the control plane IAM role.
