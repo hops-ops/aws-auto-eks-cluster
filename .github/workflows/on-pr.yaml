@@ -2,6 +2,7 @@ name: on-pr
 
 on:
   pull_request:
+    branches: [main]
     types: [labeled, opened, reopened, synchronize]
     paths:
       - '.github/workflows/on-pr.yaml'
@@ -37,6 +38,8 @@ jobs:
           { "example": "examples/autoeksclusters/test/example.yaml", "observed_resources": "examples/autoeksclusters/test/mocks/observed-resources/steps/1" },
           { "example": "examples/autoeksclusters/test/example.yaml", "observed_resources": "examples/autoeksclusters/test/mocks/observed-resources/steps/2" },
           { "example": "examples/autoeksclusters/test/example.yaml", "observed_resources": "examples/autoeksclusters/test/mocks/observed-resources/steps/3" },
+          { "example": "examples/autoeksclusters/test/example.yaml", "observed_resources": "examples/autoeksclusters/test/mocks/observed-resources/steps/4" },
+          { "example": "examples/autoeksclusters/test/example.yaml", "observed_resources": "examples/autoeksclusters/test/mocks/observed-resources/steps/5" },
           { "example": "examples/autoeksclusters/with-network/test/example.yaml", "observed_resources": "examples/autoeksclusters/with-network/test/mocks/observed-resources/steps/1" }
         ]
       api_path: apis/autoeksclusters

@@ -85,6 +85,19 @@
     },
     {
       "customType": "regex",
+      "description": "External Crossplane packages in E2E tests (tracked via Docker tags)",
+      "managerFilePatterns": [
+        "tests/**/main.k"
+      ],
+      "matchStrings": [
+        "package\\s*=\\s*\"(?<registryUrl>[^/]+)/(?<depName>[^:]+):v?(?<currentValue>[^\"]+)\""
+      ],
+      "datasourceTemplate": "docker",
+      "registryUrlTemplate": "https://{{registryUrl}}",
+      "packageNameTemplate": "{{depName}}"
+    },
+    {
+      "customType": "regex",
       "description": "Crossplane packages from other registries (tracked via Docker tags)",
       "managerFilePatterns": [
         "apis/**/configuration.yaml",

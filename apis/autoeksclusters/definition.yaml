@@ -5,6 +5,7 @@ metadata:
 spec:
   scope: Namespaced
   group: aws.hops.ops.com.ai
+  defaultCompositeDeletePolicy: Foreground
   names:
     kind: AutoEKSCluster
     plural: autoeksclusters
@@ -412,9 +413,6 @@ spec:
             type: object
             description: Observed state of the AutoEKSCluster.
             properties:
-              clusterName:
-                type: string
-                description: Name of the EKS cluster.
               clusterEndpoint:
                 type: string
                 description: API server endpoint URL.

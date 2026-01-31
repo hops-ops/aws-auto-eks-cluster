@@ -42,4 +42,32 @@ spec:
     name: {{ $am.providerConfig.name }}
     kind: {{ $am.providerConfig.kind }}
 {{- end }}
+
+# ==============================================================================
+# Usages: Delete SecurityGroupIngressRule before Cluster
+# ==============================================================================
+{{- range $i, $rule := $am.securityGroupRules.ingress }}
+{{- $ruleName := printf "%s-sg-rule-%d" $am.cluster.name $i }}
+{{- $ruleResourceName := printf "sg-ingress-%d" $i }}
+---
+apiVersion: protection.crossplane.io/v1beta1
+kind: Usage
+metadata:
+  name: {{ $am.cluster.name }}-delete-{{ $ruleResourceName }}-before-cluster
+  labels: {{ $am.labels | toJson }}
+  annotations:
+    {{ setResourceNameAnnotation (printf "delete-%s-before-cluster" $ruleResourceName) }}
+spec:
+  replayDeletion: true
+  of:
+    apiVersion: eks.aws.m.upbound.io/v1beta1
+    kind: Cluster
+    resourceRef:
+      name: {{ $am.cluster.name }}
+  by:
+    apiVersion: ec2.aws.m.upbound.io/v1beta1
+    kind: SecurityGroupIngressRule
+    resourceRef:
+      name: {{ $ruleName }}
+{{- end }}
 {{ end }}

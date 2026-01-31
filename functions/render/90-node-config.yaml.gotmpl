@@ -112,10 +112,13 @@ spec:
 
 # ==============================================================================
 # Usages: Delete NodeConfig Objects in correct order
-# NodeConfig objects are rendered when this block is rendered ($am.render.nodeConfig)
-# so we create Usages at the same time
+# Gated on readiness to prevent stuck deletions
 # ==============================================================================
+{{ $nodeClassReady := get $obs._readiness "nodeclass" }}
+{{ $nodePoolReady := get $obs._readiness "nodepool" }}
+{{ $k8sProviderConfigReady := get $obs._readiness "k8s-provider-config" }}
 
+{{ if and $nodeClassReady $k8sProviderConfigReady }}
 # Delete NodeClass before Kubernetes ProviderConfig Object
 ---
 apiVersion: protection.crossplane.io/v1beta1
@@ -137,8 +140,10 @@ spec:
     kind: Object
     resourceRef:
       name: {{ $am.cluster.name }}-{{ $am.nodeConfig.nodeClass.name }}
+{{ end }}
 
 {{ if $am.nodeConfig.nodePool.enabled }}
+{{ if and $nodePoolReady $nodeClassReady }}
 # Delete NodePool before NodeClass (NodePool references NodeClass)
 ---
 apiVersion: protection.crossplane.io/v1beta1
@@ -160,7 +165,9 @@ spec:
     kind: Object
     resourceRef:
       name: {{ $am.cluster.name }}-{{ $am.nodeConfig.nodePool.name }}
+{{ end }}
 
+{{ if and $nodePoolReady $k8sProviderConfigReady }}
 # Delete NodePool before Kubernetes ProviderConfig Object
 ---
 apiVersion: protection.crossplane.io/v1beta1
@@ -182,5 +189,6 @@ spec:
     kind: Object
     resourceRef:
       name: {{ $am.cluster.name }}-{{ $am.nodeConfig.nodePool.name }}
+{{ end }}
 {{ end }}
 {{ end }}
