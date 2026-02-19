@@ -26,7 +26,7 @@ jobs:
 
   validate:
     needs: setup
-    uses: unbounded-tech/workflows-crossplane/.github/workflows/validate.yaml@v2.13.0
+    uses: unbounded-tech/workflows-crossplane/.github/workflows/validate.yaml.14.2
     with:
       examples: |
         [
@@ -46,11 +46,11 @@ jobs:
 
   test:
     needs: setup
-    uses: unbounded-tech/workflows-crossplane/.github/workflows/test.yaml@v2.13.0
+    uses: unbounded-tech/workflows-crossplane/.github/workflows/test.yaml.14.2
 
   e2e:
     needs: setup
-    uses: unbounded-tech/workflows-crossplane/.github/workflows/e2e.yaml@v2.13.0
+    uses: unbounded-tech/workflows-crossplane/.github/workflows/e2e.yaml.14.2
     with:
       aws: true
       aws-use-oidc: true
@@ -70,11 +70,3 @@ jobs:
       DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
     with:
       useDeployKey: true
-      yqPatches: |
-        patches:
-          - filePath: .gitops/deploy/values.yaml
-            selector: .version
-            valuePrefix: "v"
-          - filePath: .gitops/deploy/Chart.yaml
-            selector: .version
-            valuePrefix: ""

@@ -1,6 +1,0 @@
-apiVersion: v2
-name: aws-auto-eks-cluster
-description: AWS EKS Auto Mode cluster configuration
-type: application
-version: 0.0.0
-appVersion: 0.0.0
