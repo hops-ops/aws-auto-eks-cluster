@@ -49,7 +49,7 @@ jobs:
 
   e2e:
     needs: setup
-    uses: unbounded-tech/workflows-crossplane/.github/workflows/e2e.yaml@v2.16.0
+    uses: unbounded-tech/workflows-crossplane/.github/workflows/e2e.yaml@feat/delete-extra-resources
     with:
       aws: true
       aws-use-oidc: true
