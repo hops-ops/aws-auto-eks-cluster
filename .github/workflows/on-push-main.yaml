@@ -58,6 +58,7 @@ jobs:
       aws-region: "${{ vars.AWS_REGION }}"
       timeout-minutes: 90
       cleanup-timeout-minutes: 90
+      write-env-files: true
       env-vars: |
         {
           "ADMIN_ROLE_ARN": "${{ vars.ADMIN_ROLE_ARN }}",
