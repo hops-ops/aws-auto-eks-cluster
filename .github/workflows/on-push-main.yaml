@@ -22,11 +22,11 @@ permissions:
 
 jobs:
   setup:
-    uses: unbounded-tech/workflows-crossplane/.github/workflows/setup.yaml@v2.19.1
+    uses: unbounded-tech/workflows-crossplane/.github/workflows/setup.yaml@v2.20.0
 
   validate:
     needs: setup
-    uses: unbounded-tech/workflows-crossplane/.github/workflows/validate.yaml@v2.19.1
+    uses: unbounded-tech/workflows-crossplane/.github/workflows/validate.yaml@v2.20.0
     with:
       examples: |
         [
@@ -46,18 +46,25 @@ jobs:
 
   test:
     needs: setup
-    uses: unbounded-tech/workflows-crossplane/.github/workflows/test.yaml@v2.19.1
+    uses: unbounded-tech/workflows-crossplane/.github/workflows/test.yaml@v2.20.0
 
   e2e:
     needs: setup
-    uses: unbounded-tech/workflows-crossplane/.github/workflows/e2e.yaml@v2.19.1
+    uses: unbounded-tech/workflows-crossplane/.github/workflows/e2e.yaml@v2.20.0
     with:
       aws: true
       aws-use-oidc: true
-      aws-account-id: "034489662075"
-      aws-region: us-east-2
+      aws-account-id: "${{ vars.AWS_ACCOUNT_ID }}"
+      aws-region: "${{ vars.AWS_REGION }}"
       timeout-minutes: 90
       cleanup-timeout-minutes: 90
+      write-env-files: true
+      env-vars: |
+        {
+          "ADMIN_ROLE_ARN": "${{ vars.ADMIN_ROLE_ARN }}",
+          "PRIVATE_SUBNET_ID_A": "${{ vars.PRIVATE_SUBNET_ID_A }}",
+          "PRIVATE_SUBNET_ID_B": "${{ vars.PRIVATE_SUBNET_ID_B }}"
+        }
 
   version-and-tag:
     name: Version and Tag
