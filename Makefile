@@ -4,6 +4,7 @@ PACKAGE ?= configuration-aws-auto-eks-cluster
 XRD_DIR := apis/autoeksclusters
 COMPOSITION := $(XRD_DIR)/composition.yaml
 DEFINITION := $(XRD_DIR)/definition.yaml
+CONFIGURATION := $(XRD_DIR)/configuration.yaml
 EXAMPLE_DEFAULT := examples/autoeksclusters/standard.yaml
 RENDER_TESTS := $(wildcard tests/test-*)
 E2E_TESTS := $(wildcard tests/e2etest-*)
@@ -11,9 +12,14 @@ E2E_TESTS := $(wildcard tests/e2etest-*)
 clean:
 	rm -rf _output
 	rm -rf .up
+	rm -f $(CONFIGURATION)
 
 build:
 	up project build
+
+generate-configuration:
+	@set -euo pipefail; \
+	hops validate generate-configuration --path . --api-path "$(XRD_DIR)"
 
 # Examples list - mirrors GitHub Actions workflow
 # Format: example_path::observed_resources_path (observed_resources_path is optional)
@@ -65,7 +71,7 @@ render\:all:
 	exit $$failed
 
 # Validate all examples (parallel execution, output shown per-job when complete)
-validate\:all:
+validate\:all: generate-configuration
 	@tmpdir=$$(mktemp -d); \
 	pids=""; \
 	for entry in $(EXAMPLES); do \
@@ -99,16 +105,16 @@ validate\:all:
 	exit $$failed
 
 # Shorthand aliases
-.PHONY: render validate
+.PHONY: render validate generate-configuration
 render: ; @$(MAKE) 'render:all'
-validate: ; @$(MAKE) 'validate:all'
+validate: ; @$(MAKE) generate-configuration 'validate:all'
 
 # Single example targets
 render\:%:
 	@example="examples/autoeksclusters/$*.yaml"; \
 	up composition render --xrd=$(DEFINITION) $(COMPOSITION) $$example
 
-validate\:%:
+validate\:%: generate-configuration
 	@example="examples/autoeksclusters/$*.yaml"; \
 	up composition render --xrd=$(DEFINITION) $(COMPOSITION) $$example \
 		--include-full-xr --quiet | \
