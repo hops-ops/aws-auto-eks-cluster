@@ -6,6 +6,7 @@
 
 {{ $eff := $state.spec.effective }}
 {{ $obs := $state.observed }}
+{{ $nodeClassTags := merge ($eff.tags | default dict) ($eff.nodeConfig.nodeClass.tags | default dict) }}
 
 # ==============================================================================
 # Computed IAM Values
@@ -19,7 +20,7 @@
 # Render Flags
 # ==============================================================================
 {{ $renderIamRoles := true }}
-{{ $renderIamPolicies := true }}
+{{ $renderIamPolicies := gt (len $nodeClassTags) 0 }}
 {{ $renderIamAttachments := $obs.controlPlaneRole.ready }}
 {{ $renderKms := $eff.encryptionEnabled }}
 {{ $renderCluster := and $obs.controlPlaneRole.ready (or (not $eff.encryptionEnabled) $obs.kms.ready) }}
@@ -76,6 +77,7 @@
   "oidc" $eff.oidc
 
   "nodeConfig" $eff.nodeConfig
+  "nodeClassTags" $nodeClassTags
 
   "providerConfig" $eff.providerConfigRef
   "kubernetesProviderConfig" $eff.kubernetesProviderConfigRef

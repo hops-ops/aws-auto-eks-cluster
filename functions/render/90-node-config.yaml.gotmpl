@@ -36,7 +36,9 @@ spec:
         {{- range $subnet := $am.cluster.observedSubnetIds }}
         - id: {{ $subnet }}
         {{- end }}
-        tags: {{ merge (dict "Name" (printf "%s-%s" $am.cluster.name $am.nodeConfig.nodeClass.name)) $am.tags | toJson }}
+        {{- if gt (len $am.nodeClassTags) 0 }}
+        tags: {{ merge (dict "Name" (printf "%s-%s" $am.cluster.name $am.nodeConfig.nodeClass.name)) $am.nodeClassTags | toJson }}
+        {{- end }}
   providerConfigRef:
     name: {{ $am.cluster.name }}
     kind: ProviderConfig
@@ -95,6 +97,14 @@ spec:
               operator: Gt
               values:
               - "4"
+            - key: eks.amazonaws.com/instance-memory
+              operator: Gt
+              values:
+              - "7999"
+            - key: eks.amazonaws.com/instance-cpu
+              operator: Gt
+              values:
+              - "1"
             - key: kubernetes.io/arch
               operator: In
               values:

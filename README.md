@@ -94,6 +94,8 @@ spec:
     nodeClass:
       ephemeralStorage:
         size: "100Gi"
+      tags:
+        workload-tier: general
     nodePool:
       # Custom requirements for Graviton support
       requirements:
@@ -302,7 +304,7 @@ spec:
 |----------|---------|-----------|
 | `iam.Role` (controlplane) | EKS control plane permissions | Always |
 | `iam.Role` (node) | Node instance permissions | Always |
-| `iam.Policy` (resource-tagging) | Auto Mode resource tagging | Always |
+| `iam.Policy` (resource-tagging) | Extra permissions for custom Auto Mode resource tags | When tags are propagated to Auto Mode resources |
 | `iam.RolePolicyAttachment` (6x) | AWS managed policy attachments | When roles ready |
 | `kms.Key` + `kms.Alias` | Secrets encryption | When encryption enabled |
 | `eks.Cluster` | EKS cluster with Auto Mode | When IAM/KMS ready |
@@ -339,7 +341,7 @@ spec:
 | `iam.nodeRole.externalName` | No | - | Existing node IAM role name to import |
 | `kms.externalName` | No | - | Existing KMS key ID to import (not ARN) |
 | `oidc.externalName` | No | - | Existing OIDC provider ARN to import |
-| `tags` | No | `{hops.ops.com.ai/managed: "true"}` | Additional AWS tags merged with defaults |
+| `tags` | No | `{hops.ops.com.ai/managed: "true"}` | Additional AWS tags merged with defaults and propagated to Auto Mode resources where supported |
 | `labels` | No | `{hops.ops.com.ai/managed: "true"}` | Additional Kubernetes labels merged with defaults |
 | `permissionsBoundary` | No | - | IAM permissions boundary ARN |
 | `privateAccess` | No | `true` | Enable private API endpoint |
@@ -353,9 +355,10 @@ spec:
 | `nodeConfig.nodeClass.ephemeralStorage.size` | No | `80Gi` | Ephemeral storage size |
 | `nodeConfig.nodeClass.ephemeralStorage.iops` | No | `3000` | Ephemeral storage IOPS |
 | `nodeConfig.nodeClass.ephemeralStorage.throughput` | No | `125` | Ephemeral storage throughput (MiB/s) |
+| `nodeConfig.nodeClass.tags` | No | `{}` | Additional Auto Mode resource tags merged with `tags` |
 | `nodeConfig.nodePool.enabled` | No | `true` | Create the NodePool |
 | `nodeConfig.nodePool.name` | No | `hops-spot` | NodePool name |
-| `nodeConfig.nodePool.requirements` | No | spot, c/m/r, gen4+, amd64 | Karpenter node requirements |
+| `nodeConfig.nodePool.requirements` | No | spot, c/m/r, gen4+, ≥8 GiB memory, ≥2 vCPU, amd64 | Karpenter node requirements |
 | `nodeConfig.nodePool.expireAfter` | No | `336h` | Duration after which nodes expire |
 | `nodeConfig.nodePool.disruption.consolidationPolicy` | No | `WhenEmptyOrUnderutilized` | Consolidation policy |
 | `nodeConfig.nodePool.disruption.consolidateAfter` | No | `30s` | Time before consolidating |

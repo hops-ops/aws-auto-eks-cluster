@@ -97,6 +97,7 @@ spec:
     name: {{ $am.providerConfig.name }}
     kind: {{ $am.providerConfig.kind }}
 
+{{ if $am.render.iamPolicies }}
 ---
 apiVersion: iam.aws.m.upbound.io/v1beta1
 kind: RolePolicyAttachment
@@ -117,6 +118,7 @@ spec:
   providerConfigRef:
     name: {{ $am.providerConfig.name }}
     kind: {{ $am.providerConfig.kind }}
+{{ end }}
 
 # Node group policy attachments
 ---
@@ -275,7 +277,7 @@ spec:
       name: {{ $am.cluster.name }}-cp-network
 {{ end }}
 
-{{ if and $cpRoleReady (get $readiness "iam-attach-cp-resource-tagging") }}
+{{ if and $am.render.iamPolicies $cpRoleReady (get $readiness "iam-attach-cp-resource-tagging") }}
 ---
 apiVersion: protection.crossplane.io/v1beta1
 kind: Usage
@@ -299,7 +301,7 @@ spec:
 {{ end }}
 
 # Delete RolePolicyAttachment before IAM Policy
-{{ if and $obs.taggingPolicy.ready (get $readiness "iam-attach-cp-resource-tagging") }}
+{{ if and $am.render.iamPolicies $obs.taggingPolicy.ready (get $readiness "iam-attach-cp-resource-tagging") }}
 ---
 apiVersion: protection.crossplane.io/v1beta1
 kind: Usage

@@ -140,7 +140,9 @@ spec:
                 # Optional AWS config
                 tags:
                   type: object
-                  description: Custom tags applied to all AWS resources. Merged with default tags (hops.ops.com.ai/managed, hops.ops.com.ai/<kind>).
+                  description: |
+                    Custom tags applied to AWS resources managed directly by this composition and, where supported,
+                    propagated to EKS Auto Mode provisioned resources.
                   additionalProperties:
                     type: string
                   x-kubernetes-preserve-unknown-fields: true
@@ -358,6 +360,15 @@ spec:
                               type: integer
                               description: Throughput in MiB/s for ephemeral storage.
                               default: 125
+                        tags:
+                          type: object
+                          description: |
+                            Additional custom tags for AWS resources provisioned by EKS Auto Mode from this NodeClass.
+                            These are merged with spec.tags. When any propagated tags are set, the composition adds
+                            the extra Cluster IAM role permissions required by EKS Auto Mode docs.
+                          additionalProperties:
+                            type: string
+                          x-kubernetes-preserve-unknown-fields: true
                     nodePool:
                       type: object
                       description: NodePool configuration.
