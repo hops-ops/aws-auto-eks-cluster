@@ -32,6 +32,8 @@
 {{ $renderSecurityGroupRules := and $eff.securityGroupRules.enabled (ne $obs.cluster.securityGroupId "") }}
 # NodeConfig requires: enabled, clusterAuth ready, security group available, and observed subnets available
 {{ $renderNodeConfig := and $eff.nodeConfig.enabled $obs.clusterAuth.ready (ne $obs.cluster.securityGroupId "") $obs.cluster.subnetIds }}
+# Default StorageClass requires: enabled, clusterAuth ready (cluster's k8s ProviderConfig is usable)
+{{ $renderDefaultStorageClass := and $eff.storage.defaultClass.enabled $obs.clusterAuth.ready }}
 
 # ==============================================================================
 # Build $state.automode
@@ -79,6 +81,8 @@
   "nodeConfig" $eff.nodeConfig
   "nodeClassTags" $nodeClassTags
 
+  "storage" $eff.storage
+
   "providerConfig" $eff.providerConfigRef
   "kubernetesProviderConfig" $eff.kubernetesProviderConfigRef
 
@@ -95,6 +99,7 @@
     "oidc" $renderOidc
     "securityGroupRules" $renderSecurityGroupRules
     "nodeConfig" $renderNodeConfig
+    "defaultStorageClass" $renderDefaultStorageClass
   )
 }}
 

@@ -633,6 +633,255 @@ _items = [
         }
     }
 
+    # Test: hops-default StorageClass renders by default once clusterAuth is ready.
+    # Asserts the Object MR wrapping the StorageClass exists and carries the cluster-default
+    # annotation, gp3 + encrypted parameters, and WaitForFirstConsumer binding mode.
+    metav1alpha1.CompositionTest{
+        metadata.name = "default-renders-hops-default-storage-class"
+        spec = {
+            compositionPath = "apis/autoeksclusters/composition.yaml"
+            xrdPath = "apis/autoeksclusters/definition.yaml"
+            timeoutSeconds = 120
+            validate = True
+            xr = awsv1alpha1.AutoEKSCluster{
+                metadata.name = "test-sc-default"
+                spec = {
+                    clusterName = "test-sc-default"
+                    region = "us-east-1"
+                    accountId = "123456789012"
+                    version = "1.31"
+                    subnetIds = ["subnet-aaa"]
+                }
+            }
+            observedResources = [
+                {
+                    apiVersion = "iam.aws.m.upbound.io/v1beta1"
+                    kind = "Role"
+                    metadata = {
+                        name = "test-sc-default-controlplane"
+                        annotations = {
+                            "crossplane.io/composition-resource-name" = "iam-role-controlplane"
+                            "gotemplating.fn.crossplane.io/composition-resource-name" = "iam-role-controlplane"
+                        }
+                    }
+                    status = {
+                        conditions = [{type = "Ready", status = "True", reason = "Available"}]
+                        atProvider = {arn = "arn:aws:iam::123456789012:role/test-sc-default-controlplane", name = "test-sc-default-controlplane"}
+                    }
+                }
+                {
+                    apiVersion = "iam.aws.m.upbound.io/v1beta1"
+                    kind = "Role"
+                    metadata = {
+                        name = "test-sc-default-node"
+                        annotations = {
+                            "crossplane.io/composition-resource-name" = "iam-role-node"
+                            "gotemplating.fn.crossplane.io/composition-resource-name" = "iam-role-node"
+                        }
+                    }
+                    status = {
+                        conditions = [{type = "Ready", status = "True", reason = "Available"}]
+                        atProvider = {arn = "arn:aws:iam::123456789012:role/test-sc-default-node", name = "test-sc-default-node"}
+                    }
+                }
+                {
+                    apiVersion = "kms.aws.m.upbound.io/v1beta1"
+                    kind = "Key"
+                    metadata = {
+                        name = "test-sc-default-secrets"
+                        annotations = {
+                            "crossplane.io/composition-resource-name" = "kms-key"
+                            "gotemplating.fn.crossplane.io/composition-resource-name" = "kms-key"
+                        }
+                    }
+                    status = {
+                        conditions = [{type = "Ready", status = "True", reason = "Available"}]
+                        atProvider = {arn = "arn:aws:kms:us-east-1:123456789012:key/12345678", keyId = "12345678"}
+                    }
+                }
+                {
+                    apiVersion = "eks.aws.m.upbound.io/v1beta1"
+                    kind = "Cluster"
+                    metadata = {
+                        name = "test-sc-default"
+                        annotations = {
+                            "crossplane.io/composition-resource-name" = "cluster"
+                            "gotemplating.fn.crossplane.io/composition-resource-name" = "cluster"
+                        }
+                    }
+                    status = {
+                        conditions = [{type = "Ready", status = "True", reason = "Available"}]
+                        atProvider = {
+                            arn = "arn:aws:eks:us-east-1:123456789012:cluster/test-sc-default"
+                            endpoint = "https://ABCDEF.gr7.us-east-1.eks.amazonaws.com"
+                            id = "test-sc-default"
+                            identity = [{oidc = [{issuer = "https://oidc.eks.us-east-1.amazonaws.com/id/ABCDEF"}]}]
+                            status = "ACTIVE"
+                            vpcConfig = {
+                                clusterSecurityGroupId = "sg-012345"
+                                subnetIds = ["subnet-aaa"]
+                            }
+                        }
+                    }
+                }
+                {
+                    apiVersion = "eks.aws.m.upbound.io/v1beta1"
+                    kind = "ClusterAuth"
+                    metadata = {
+                        name = "test-sc-default"
+                        annotations = {
+                            "crossplane.io/composition-resource-name" = "cluster-auth"
+                            "gotemplating.fn.crossplane.io/composition-resource-name" = "cluster-auth"
+                        }
+                    }
+                    status = {
+                        conditions = [{type = "Ready", status = "True", reason = "Available"}]
+                        atProvider = {clusterName = "test-sc-default", region = "us-east-1"}
+                    }
+                }
+            ]
+            assertResources = [
+                {
+                    apiVersion = "kubernetes.m.crossplane.io/v1alpha1"
+                    kind = "Object"
+                    metadata.name = "test-sc-default-default-storage-class"
+                    spec.forProvider.manifest = {
+                        apiVersion = "storage.k8s.io/v1"
+                        kind = "StorageClass"
+                        metadata = {
+                            name = "hops-default"
+                            annotations = {"storageclass.kubernetes.io/is-default-class" = "true"}
+                        }
+                        provisioner = "ebs.csi.eks.amazonaws.com"
+                        parameters = {type = "gp3", encrypted = "true"}
+                        volumeBindingMode = "WaitForFirstConsumer"
+                        reclaimPolicy = "Delete"
+                        allowVolumeExpansion = True
+                    }
+                }
+            ]
+        }
+    }
+
+    # Test: storage.defaultClass.enabled = False skips the SC render but the rest of
+    # the cluster-auth-gated pipeline (k8s ProviderConfig Object) still renders.
+    metav1alpha1.CompositionTest{
+        metadata.name = "storage-default-disabled-skips-sc"
+        spec = {
+            compositionPath = "apis/autoeksclusters/composition.yaml"
+            xrdPath = "apis/autoeksclusters/definition.yaml"
+            timeoutSeconds = 120
+            validate = True
+            xr = awsv1alpha1.AutoEKSCluster{
+                metadata.name = "test-sc-disabled"
+                spec = {
+                    clusterName = "test-sc-disabled"
+                    region = "us-east-1"
+                    accountId = "123456789012"
+                    version = "1.31"
+                    subnetIds = ["subnet-aaa"]
+                    storage = {defaultClass = {enabled = False}}
+                }
+            }
+            observedResources = [
+                {
+                    apiVersion = "iam.aws.m.upbound.io/v1beta1"
+                    kind = "Role"
+                    metadata = {
+                        name = "test-sc-disabled-controlplane"
+                        annotations = {
+                            "crossplane.io/composition-resource-name" = "iam-role-controlplane"
+                            "gotemplating.fn.crossplane.io/composition-resource-name" = "iam-role-controlplane"
+                        }
+                    }
+                    status = {
+                        conditions = [{type = "Ready", status = "True", reason = "Available"}]
+                        atProvider = {arn = "arn:aws:iam::123456789012:role/test-sc-disabled-controlplane", name = "test-sc-disabled-controlplane"}
+                    }
+                }
+                {
+                    apiVersion = "iam.aws.m.upbound.io/v1beta1"
+                    kind = "Role"
+                    metadata = {
+                        name = "test-sc-disabled-node"
+                        annotations = {
+                            "crossplane.io/composition-resource-name" = "iam-role-node"
+                            "gotemplating.fn.crossplane.io/composition-resource-name" = "iam-role-node"
+                        }
+                    }
+                    status = {
+                        conditions = [{type = "Ready", status = "True", reason = "Available"}]
+                        atProvider = {arn = "arn:aws:iam::123456789012:role/test-sc-disabled-node", name = "test-sc-disabled-node"}
+                    }
+                }
+                {
+                    apiVersion = "kms.aws.m.upbound.io/v1beta1"
+                    kind = "Key"
+                    metadata = {
+                        name = "test-sc-disabled-secrets"
+                        annotations = {
+                            "crossplane.io/composition-resource-name" = "kms-key"
+                            "gotemplating.fn.crossplane.io/composition-resource-name" = "kms-key"
+                        }
+                    }
+                    status = {
+                        conditions = [{type = "Ready", status = "True", reason = "Available"}]
+                        atProvider = {arn = "arn:aws:kms:us-east-1:123456789012:key/12345678", keyId = "12345678"}
+                    }
+                }
+                {
+                    apiVersion = "eks.aws.m.upbound.io/v1beta1"
+                    kind = "Cluster"
+                    metadata = {
+                        name = "test-sc-disabled"
+                        annotations = {
+                            "crossplane.io/composition-resource-name" = "cluster"
+                            "gotemplating.fn.crossplane.io/composition-resource-name" = "cluster"
+                        }
+                    }
+                    status = {
+                        conditions = [{type = "Ready", status = "True", reason = "Available"}]
+                        atProvider = {
+                            arn = "arn:aws:eks:us-east-1:123456789012:cluster/test-sc-disabled"
+                            endpoint = "https://ABCDEF.gr7.us-east-1.eks.amazonaws.com"
+                            id = "test-sc-disabled"
+                            identity = [{oidc = [{issuer = "https://oidc.eks.us-east-1.amazonaws.com/id/ABCDEF"}]}]
+                            status = "ACTIVE"
+                            vpcConfig = {
+                                clusterSecurityGroupId = "sg-012345"
+                                subnetIds = ["subnet-aaa"]
+                            }
+                        }
+                    }
+                }
+                {
+                    apiVersion = "eks.aws.m.upbound.io/v1beta1"
+                    kind = "ClusterAuth"
+                    metadata = {
+                        name = "test-sc-disabled"
+                        annotations = {
+                            "crossplane.io/composition-resource-name" = "cluster-auth"
+                            "gotemplating.fn.crossplane.io/composition-resource-name" = "cluster-auth"
+                        }
+                    }
+                    status = {
+                        conditions = [{type = "Ready", status = "True", reason = "Available"}]
+                        atProvider = {clusterName = "test-sc-disabled", region = "us-east-1"}
+                    }
+                }
+            ]
+            assertResources = [
+                # Sibling Object MRs gated on clusterAuth.ready still render — proves
+                # the template pipeline ran past the SC step without error.
+                {
+                    apiVersion = "kubernetes.m.crossplane.io/v1alpha1"
+                    kind = "Object"
+                    metadata.name = "test-sc-disabled-k8s-provider-config"
+                }
+            ]
+        }
+    }
+
 ]
 
 items = _items

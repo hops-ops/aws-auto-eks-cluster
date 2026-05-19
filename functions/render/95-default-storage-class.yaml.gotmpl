@@ -1,0 +1,40 @@
+# code: language=yaml
+# Default cluster StorageClass: hops-default
+#
+# EKS Auto Mode ships the EBS CSI driver (ebs.csi.eks.amazonaws.com) but does not
+# create or default a StorageClass. Without this, PVCs that omit storageClassName
+# stay Pending forever and downstream stacks improvise by piggybacking on incidental
+# SCs from other stacks. See specs/aws-eks-auto-mode-default-storage-class.
+
+{{ $am := $state.automode }}
+
+{{ if $am.render.defaultStorageClass }}
+---
+apiVersion: kubernetes.m.crossplane.io/v1alpha1
+kind: Object
+metadata:
+  name: {{ $am.cluster.name }}-default-storage-class
+  labels: {{ $am.labels | toJson }}
+  annotations:
+    {{ setResourceNameAnnotation "default-storage-class" }}
+spec:
+  managementPolicies: {{ $am.managementPolicies | toJson }}
+  forProvider:
+    manifest:
+      apiVersion: storage.k8s.io/v1
+      kind: StorageClass
+      metadata:
+        name: hops-default
+        annotations:
+          storageclass.kubernetes.io/is-default-class: "true"
+      provisioner: ebs.csi.eks.amazonaws.com
+      parameters:
+        type: gp3
+        encrypted: "true"
+      volumeBindingMode: WaitForFirstConsumer
+      reclaimPolicy: Delete
+      allowVolumeExpansion: true
+  providerConfigRef:
+    name: {{ $am.cluster.name }}
+    kind: ProviderConfig
+{{ end }}
