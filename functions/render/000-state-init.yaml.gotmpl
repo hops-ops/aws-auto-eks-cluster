@@ -31,6 +31,12 @@
 {{ $disruptionConfig := $nodePoolConfig.disruption | default (dict) }}
 {{ $sgRules := $spec.securityGroupRules | default (dict) }}
 {{ $oidcConfig := $spec.oidc | default (dict) }}
+{{ $storageConfig := $spec.storage | default (dict) }}
+{{ $defaultClassConfig := $storageConfig.defaultClass | default (dict) }}
+{{ $defaultClassEnabled := true }}
+{{ if hasKey $defaultClassConfig "enabled" }}
+  {{ $defaultClassEnabled = $defaultClassConfig.enabled }}
+{{ end }}
 
 {{ $subnetSelector := $spec.subnetSelector | default (dict) }}
 {{ $iam := $spec.iam | default (dict) }}
@@ -85,6 +91,11 @@
   "oidc" (dict
     "enabled" ($oidcConfig.enabled | default false)
     "externalName" ($oidcConfig.externalName | default "")
+  )
+  "storage" (dict
+    "defaultClass" (dict
+      "enabled" $defaultClassEnabled
+    )
   )
   "nodeConfig" (dict
     "enabled" ($nodeConfig.enabled | default true)

@@ -177,6 +177,27 @@ spec:
                   description: Enable KMS encryption for Kubernetes secrets.
                   default: true
 
+                # Storage
+                storage:
+                  type: object
+                  description: |
+                    Cluster storage defaults. EKS Auto Mode ships the EBS CSI driver
+                    (ebs.csi.eks.amazonaws.com) but does not create a default StorageClass.
+                    By default this composition creates `hops-default` (gp3, encrypted,
+                    WaitForFirstConsumer, expandable) and marks it the cluster-default SC.
+                  properties:
+                    defaultClass:
+                      type: object
+                      description: Default StorageClass settings.
+                      properties:
+                        enabled:
+                          type: boolean
+                          description: |
+                            Create the `hops-default` StorageClass and mark it as the
+                            cluster-default. Set to false to opt out (e.g. when a downstream
+                            stack provides its own default).
+                          default: true
+
                 # KMS Key configuration
                 kms:
                   type: object
