@@ -7,6 +7,7 @@
 # SCs from other stacks. See specs/aws-eks-auto-mode-default-storage-class.
 
 {{ $am := $state.automode }}
+{{ $obs := $state.observed }}
 
 {{ if $am.render.defaultStorageClass }}
 ---
@@ -37,4 +38,30 @@ spec:
   providerConfigRef:
     name: {{ $am.cluster.name }}
     kind: ProviderConfig
+
+{{ $defaultScReady := get $obs._readiness "default-storage-class" | default false }}
+{{ $k8sPcReady := get $obs._readiness "k8s-provider-config" | default false }}
+{{ if and $defaultScReady $k8sPcReady }}
+# Delete default StorageClass before Kubernetes ProviderConfig Object
+---
+apiVersion: protection.crossplane.io/v1beta1
+kind: Usage
+metadata:
+  name: {{ $am.cluster.name }}-delete-default-storage-class-before-k8s-pc
+  labels: {{ $am.labels | toJson }}
+  annotations:
+    {{ setResourceNameAnnotation "delete-default-storage-class-before-k8s-pc" }}
+spec:
+  replayDeletion: true
+  of:
+    apiVersion: kubernetes.m.crossplane.io/v1alpha1
+    kind: Object
+    resourceRef:
+      name: {{ $am.cluster.name }}-k8s-provider-config
+  by:
+    apiVersion: kubernetes.m.crossplane.io/v1alpha1
+    kind: Object
+    resourceRef:
+      name: {{ $am.cluster.name }}-default-storage-class
+{{ end }}
 {{ end }}
