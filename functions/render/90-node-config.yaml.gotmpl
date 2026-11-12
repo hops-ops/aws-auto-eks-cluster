@@ -152,6 +152,30 @@ spec:
       name: {{ $am.cluster.name }}-{{ $am.nodeConfig.nodeClass.name }}
 {{ end }}
 
+{{ if and $nodeClassReady $obs.nodeRole.ready }}
+# Delete NodeClass before node IAM Role (NodeClass references the node role)
+---
+apiVersion: protection.crossplane.io/v1beta1
+kind: Usage
+metadata:
+  name: {{ $am.cluster.name }}-delete-nodeclass-before-node-role
+  labels: {{ $am.labels | toJson }}
+  annotations:
+    {{ setResourceNameAnnotation "delete-nodeclass-before-node-role" }}
+spec:
+  replayDeletion: true
+  of:
+    apiVersion: iam.aws.m.upbound.io/v1beta1
+    kind: Role
+    resourceRef:
+      name: {{ $am.cluster.name }}-node
+  by:
+    apiVersion: kubernetes.m.crossplane.io/v1alpha1
+    kind: Object
+    resourceRef:
+      name: {{ $am.cluster.name }}-{{ $am.nodeConfig.nodeClass.name }}
+{{ end }}
+
 {{ if $am.nodeConfig.nodePool.enabled }}
 {{ if and $nodePoolReady $nodeClassReady }}
 # Delete NodePool before NodeClass (NodePool references NodeClass)

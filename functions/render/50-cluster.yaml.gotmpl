@@ -92,6 +92,30 @@ spec:
       name: {{ $am.cluster.name }}
 {{ end }}
 
+# Delete Cluster before node role (Auto Mode computeConfig.nodeRoleArn references it)
+{{ if and $obs.nodeRole.ready $obs.cluster.ready }}
+---
+apiVersion: protection.crossplane.io/v1beta1
+kind: Usage
+metadata:
+  name: {{ $am.cluster.name }}-delete-cluster-before-node-role
+  labels: {{ $am.labels | toJson }}
+  annotations:
+    {{ setResourceNameAnnotation "delete-cluster-before-node-role" }}
+spec:
+  replayDeletion: true
+  of:
+    apiVersion: iam.aws.m.upbound.io/v1beta1
+    kind: Role
+    resourceRef:
+      name: {{ $am.cluster.name }}-node
+  by:
+    apiVersion: eks.aws.m.upbound.io/v1beta1
+    kind: Cluster
+    resourceRef:
+      name: {{ $am.cluster.name }}
+{{ end }}
+
 # Delete Cluster before KMS Key (when encryption enabled)
 {{ if and $am.cluster.encryptionEnabled $obs.kms.ready $obs.cluster.ready }}
 ---
